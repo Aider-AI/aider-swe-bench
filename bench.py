@@ -65,4 +65,16 @@ dname = checkout_repo(repo_url, commit)
 
 gold_patch = entry['patch']
 
+def files_in_patch(patch):
+    """
+    Extract the list of modified files from a unified diff patch string.
+    """
+    files = []
+    for line in patch.split('\n'):
+        if line.startswith('--- a/') or line.startswith('+++ b/'):
+            fname = line.split('/', 1)[1]
+            if fname not in files:
+                files.append(fname)
+    return files
+
 gold_files = files_in_patch(gold_patch)
