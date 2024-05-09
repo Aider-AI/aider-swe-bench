@@ -11,6 +11,8 @@ from dump import dump
 
 REPOS_DNAME = 'repos'
 
+import subprocess
+
 def clone_repo(url, dname):
     """
     Clone the repository from the given URL into the specified directory.
@@ -29,7 +31,6 @@ def checkout_repo(url, commit):
     # if needed, clone url into a subdir of REPOS_DNAME
     # checkout the given commit
 
-import subprocess
 
 dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
 
