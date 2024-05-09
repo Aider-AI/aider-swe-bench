@@ -103,8 +103,8 @@ coder = Coder.create(
 
 dump(coder.abs_fnames)
 dump(coder.repo)
-#messages = coder.format_messages()
-#utils.show_messages(messages)
+messages = coder.format_messages()
+utils.show_messages(messages)
 
 sys.exit()
 problem = entry["problem_statement"]
