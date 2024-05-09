@@ -30,17 +30,17 @@ def checkout_commit(dname, commit):
 def checkout_repo(url, commit):
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
-    
+
     # Create directory path for repo
     repo_dir = Path(REPOS_DNAME) / repo_name
-    
+
     # If repo directory doesn't exist, clone the repo
     if not repo_dir.exists():
         clone_repo(url, repo_dir)
-    
+
     # Checkout the specified commit
     checkout_commit(repo_dir, commit)
-    
+
     return repo_dir
 
 
@@ -57,7 +57,12 @@ print("-" * 40)  # Separator between entries
 for attribute, value in entry.items():
     print(f"{attribute}")#: {value}")
 
-repo_url = entry['repo']
+github_url = 'https://github.com/'
+repo_url = github_url + entry['repo']
 commit = entry['base_commit']
 
 dname = checkout_repo(repo_url, commit)
+
+gold_patch = entry['patch']
+
+gold_files = files_in_patch(gold_patch)
