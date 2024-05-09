@@ -90,7 +90,7 @@ os.chdir(git_dname)
 
 subprocess.run("git stash".split(), check=True)
 
-uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
+uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.{int(time.time() * 1000000) % 1000000:06d}")
 subprocess.run(f"git checkout -b {uniq_branch}".split(), check=True)
 
 model = Model("deepseek/deepseek-chat")
