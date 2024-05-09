@@ -9,8 +9,8 @@ from datasets import load_dataset
 
 from dump import dump
 
-#dataset = load_dataset("princeton-nlp/SWE-bench_Lite_oracle")
-dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
+cache_dir = Path.home() / '.cache' / 'huggingface' / 'datasets'
+dataset = load_dataset("princeton-nlp/SWE-bench_Lite", cache_dir=cache_dir)
 
 instance_id = 'django__django-12983'
 
