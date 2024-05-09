@@ -9,9 +9,17 @@ from datasets import load_dataset
 
 from dump import dump
 
-dataset = load_dataset("princeton-nlp/SWE-bench_Lite_oracle")
+#dataset = load_dataset("princeton-nlp/SWE-bench_Lite_oracle")
+dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
 
-for entry in dataset['train']:
-    for attribute, value in entry.items():
-        print(f"{attribute}: {value}")
-    print("-" * 40)  # Separator between entries
+instance_id = 'django__django-12983'
+
+for entry in dataset['test']:
+    if entry['instance_id'] == instance_id:
+        break
+    print(entry['instance_id'])
+    continue
+
+print("-" * 40)  # Separator between entries
+for attribute, value in entry.items():
+    print(f"{attribute}: {value}")
