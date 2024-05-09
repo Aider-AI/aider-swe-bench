@@ -105,4 +105,9 @@ problem = entry["problem_statement"]
 coder.run(problem)
 
 
-# TODO: do a git diff between the current repo state and `commit`
+# Get the diff between the current state and the original commit
+cmd = f"git diff {commit}"
+diff_output = subprocess.check_output(cmd.split()).decode()
+
+print(f"\nDiff between current state and commit {commit}:")
+print(diff_output)
