@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 from pathlib import Path
@@ -12,6 +13,19 @@ from dump import dump
 REPOS_DNAME = 'repos'
 
 import subprocess
+
+
+def files_in_patch(patch):
+    """
+    Extract the list of modified files from a unified diff patch string.
+    """
+    files = []
+    for line in patch.split('\n'):
+        if line.startswith('--- a/') or line.startswith('+++ b/'):
+            fname = line.split('/', 1)[1]
+            if fname not in files:
+                files.append(fname)
+    return files
 
 def clone_repo(url, dname):
     """
@@ -61,20 +75,34 @@ github_url = 'https://github.com/'
 repo_url = github_url + entry['repo']
 commit = entry['base_commit']
 
-dname = checkout_repo(repo_url, commit)
+git_dname = checkout_repo(repo_url, commit)
 
 gold_patch = entry['patch']
 
-def files_in_patch(patch):
-    """
-    Extract the list of modified files from a unified diff patch string.
-    """
-    files = []
-    for line in patch.split('\n'):
-        if line.startswith('--- a/') or line.startswith('+++ b/'):
-            fname = line.split('/', 1)[1]
-            if fname not in files:
-                files.append(fname)
-    return files
-
 gold_files = files_in_patch(gold_patch)
+
+
+from aider.coders import Coder
+from aider.models import Model
+from aider import utils
+
+model = Model("deepseek/deepseek-chat")
+
+os.chdir(git_dname)
+
+# Create a coder object
+coder = Coder.create(
+    main_model=model,
+    fnames=gold_files,
+    git_dname=git_dname,
+)
+
+#dump(coder.abs_fnames)
+#messages = coder.format_messages()
+#utils.show_messages(messages)
+
+problem = entry["problem_statement"]
+coder.run(problem)
+
+
+# TODO: do a git diff between the current repo state and `commit`
