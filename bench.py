@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import os
 import sys
 
@@ -9,6 +10,11 @@ from collections import defaultdict
 from datasets import load_dataset
 
 from dump import dump
+
+from aider.coders import Coder
+from aider.models import Model
+from aider import utils
+
 
 REPOS_DNAME = 'repos'
 
@@ -75,35 +81,34 @@ github_url = 'https://github.com/'
 repo_url = github_url + entry['repo']
 commit = entry['base_commit']
 
-git_dname = checkout_repo(repo_url, commit)
-
 gold_patch = entry['patch']
-
 gold_files = files_in_patch(gold_patch)
 
-
-from aider.coders import Coder
-from aider.models import Model
-from aider import utils
-
-model = Model("deepseek/deepseek-chat")
+git_dname = checkout_repo(repo_url, commit)
 
 os.chdir(git_dname)
+
+subprocess.run("git stash".split(), check=True)
+
+uniq_branch = f"bench-{time.time()}"
+subprocess.run(f"git checkout -b {uniq_branch}".split(), check=True)
+
+model = Model("deepseek/deepseek-chat")
 
 # Create a coder object
 coder = Coder.create(
     main_model=model,
     fnames=gold_files,
-    git_dname=git_dname,
 )
 
-#dump(coder.abs_fnames)
+dump(coder.abs_fnames)
+dump(coder.repo)
 #messages = coder.format_messages()
 #utils.show_messages(messages)
 
+sys.exit()
 problem = entry["problem_statement"]
 coder.run(problem)
-
 
 # Get the diff between the current state and the original commit
 cmd = f"git diff {commit}"
