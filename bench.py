@@ -28,8 +28,20 @@ def checkout_commit(dname, commit):
     subprocess.run(cmd.split(), check=True)
 
 def checkout_repo(url, commit):
-    # if needed, clone url into a subdir of REPOS_DNAME
-    # checkout the given commit
+    # Extract repo name from URL
+    repo_name = url.split("/")[-1].split(".")[0]
+    
+    # Create directory path for repo
+    repo_dir = Path(REPOS_DNAME) / repo_name
+    
+    # If repo directory doesn't exist, clone the repo
+    if not repo_dir.exists():
+        clone_repo(url, repo_dir)
+    
+    # Checkout the specified commit
+    checkout_commit(repo_dir, commit)
+    
+    return repo_dir
 
 
 dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
