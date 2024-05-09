@@ -11,6 +11,7 @@ from datasets import load_dataset
 
 from dump import dump
 
+from aider.io import InputOutput
 from aider.coders import Coder
 from aider.models import Model
 from aider import utils
@@ -64,18 +65,21 @@ def checkout_repo(url, commit):
     return repo_dir
 
 
-dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
+def get_dataset():
+    dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
+
+    res = dict()
+    for entry in dataset['test']:
+        res[entry['instance_id']] = entry
+
+    return res
+
+dataset = get_dataset()
 
 instance_id = 'django__django-12983'
 
-for entry in dataset['test']:
-    if entry['instance_id'] == instance_id:
-        break
-    #print(entry['instance_id'])
-
-print("-" * 40)  # Separator between entries
-for attribute, value in entry.items():
-    print(f"{attribute}")#: {value}")
+entry = dataset[instance_id]
+dump(entry.keys())
 
 github_url = 'https://github.com/'
 repo_url = github_url + entry['repo']
@@ -85,30 +89,41 @@ gold_patch = entry['patch']
 gold_files = files_in_patch(gold_patch)
 
 git_dname = checkout_repo(repo_url, commit)
-
 os.chdir(git_dname)
 
 subprocess.run("git stash".split(), check=True)
 
-uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.{int(time.time() * 1000000) % 1000000:06d}")
+uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
 subprocess.run(f"git checkout -b {uniq_branch}".split(), check=True)
 
-model = Model("deepseek/deepseek-chat")
+for fname in ".aider.chat.history.md .aider.input.history".split():
+    fname = Path(fname)
+    if fname.exists():
+        fname.unlink()
 
-# Create a coder object
+model = Model("deepseek/deepseek-chat")
+io = InputOutput(
+    pretty=True,
+    yes=True,
+    chat_history_file="/dev/null",
+    input_history_file="/dev/null",
+)
 coder = Coder.create(
     main_model=model,
-    fnames=gold_files,
+    io=io,
+    #fnames=gold_files,
+    map_tokens = 8192,
 )
+coder.show_announcements()
 
-dump(coder.abs_fnames)
 dump(coder.repo)
 messages = coder.format_messages()
-utils.show_messages(messages)
+#utils.show_messages(messages)
 
-sys.exit()
 problem = entry["problem_statement"]
-coder.run(problem)
+
+prompt = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
+coder.run(prompt)
 
 # Get the diff between the current state and the original commit
 cmd = f"git diff {commit}"
