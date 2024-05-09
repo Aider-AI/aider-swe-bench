@@ -74,9 +74,15 @@ def get_dataset():
 
     return res
 
+def show_problems():
+    for inst,entry in dataset.items():
+        problem = entry['problem_statement'].splitlines()[0]
+        print(f"{inst}: {problem}")
+
 dataset = get_dataset()
 
-instance_id = 'django__django-12983'
+#instance_id = 'django__django-12983'
+instance_id = sys.argv[1]
 
 entry = dataset[instance_id]
 dump(entry.keys())
@@ -111,7 +117,7 @@ io = InputOutput(
 coder = Coder.create(
     main_model=model,
     io=io,
-    #fnames=gold_files,
+    fnames=gold_files,
     map_tokens = 8192,
 )
 coder.show_announcements()
@@ -121,9 +127,9 @@ messages = coder.format_messages()
 #utils.show_messages(messages)
 
 problem = entry["problem_statement"]
+#problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
 
-prompt = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
-coder.run(prompt)
+coder.run(problem)
 
 # Get the diff between the current state and the original commit
 cmd = f"git diff {commit}"
