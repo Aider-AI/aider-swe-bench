@@ -4,6 +4,7 @@ import json
 import time
 import os
 import sys
+import tempfile
 
 from pathlib import Path
 from collections import defaultdict
@@ -16,7 +17,7 @@ from aider.io import InputOutput
 from aider.coders import Coder
 from aider.models import Model
 from aider import utils
-from aider.utils import ChdirTemporaryDirectory
+
 
 REPOS_DNAME = 'repos'
 
@@ -35,35 +36,29 @@ def files_in_patch(patch):
                 files.append(fname)
     return files
 
-def clone_repo(url, dname):
-    """
-    Clone the repository from the given URL into the specified directory.
-    """
-    cmd = f"git clone {url} {dname}"
-    subprocess.run(cmd.split(), check=True)
-
-def checkout_commit(dname, commit):
-    """
-    Checkout the specified commit in the given directory.
-    """
-    cmd = f"git -C {dname} checkout {commit}"
-    subprocess.run(cmd.split(), check=True)
 
 def checkout_repo(url, commit):
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
+    repo_name += ".git"
 
-    # Create directory path for repo
-    repo_dir = Path(REPOS_DNAME) / repo_name
+    bare_repo = Path(REPOS_DNAME) / repo_name
 
-    # If repo directory doesn't exist, clone the repo
-    if not repo_dir.exists():
-        clone_repo(url, repo_dir)
+    if not bare_repo.exists():
+        cmd = f"git clone --bare {url} {bare_repo}"
+        subprocess.run(cmd.split(), check=True)
 
-    # Checkout the specified commit
-    checkout_commit(repo_dir, commit)
+    repo_tempdir = tempfile.TemporaryDirectory()
+    dump(repo_tempdir.name)
 
-    return repo_dir
+    cmd = f"git clone {bare_repo} {repo_tempdir.name}"
+    dump(cmd)
+    subprocess.run(cmd.split(), check=True)
+
+    cmd = f"git -C {repo_tempdir.name} checkout {commit}"
+    subprocess.run(cmd.split(), check=True)
+
+    return repo_tempdir
 
 
 DATASET = "princeton-nlp/SWE-bench_Lite"
@@ -109,18 +104,18 @@ def doit(dataset, model, instance_id):
     gold_patch = entry['patch']
     gold_files = files_in_patch(gold_patch)
 
-    git_dname = checkout_repo(repo_url, commit)
+    git_tempdir = checkout_repo(repo_url, commit)
 
-    subprocess.run(f"git -C {git_dname} stash".split(), check=True)
+    subprocess.run(f"git -C {git_tempdir.name} stash".split(), check=True)
     uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
-    subprocess.run(f"git -C {git_dname} checkout -b {uniq_branch}".split(), check=True)
+    subprocess.run(f"git -C {git_tempdir.name} checkout -b {uniq_branch}".split(), check=True)
 
     for fname in ".aider.chat.history.md .aider.input.history".split():
         fname = Path(fname)
         if fname.exists():
             fname.unlink()
 
-    gold_files = [git_dname / fname for fname in gold_files]
+    gold_files = [Path(git_tempdir.name) / fname for fname in gold_files]
 
     model = Model(model)
     io = InputOutput(
@@ -132,7 +127,7 @@ def doit(dataset, model, instance_id):
     coder = Coder.create(
         main_model=model,
         io=io,
-        git_dname=git_dname,
+        git_dname=git_tempdir.name,
         fnames=gold_files,
         #map_tokens = 8192,
     )
@@ -148,7 +143,7 @@ def doit(dataset, model, instance_id):
     coder.run(problem)
 
     # Get the diff between the current state and the original commit
-    cmd = f"git  -C {git_dname} diff {commit}"
+    cmd = f"git  -C {git_tempdir.name} diff {commit}"
     diff_output = subprocess.check_output(cmd.split()).decode()
 
     print(f"\nDiff between current state and commit {commit}:")
