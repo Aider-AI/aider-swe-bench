@@ -49,10 +49,11 @@ def checkout_repo(url, commit):
         subprocess.run(cmd.split(), check=True)
 
     repo_tempdir = tempfile.TemporaryDirectory()
-    dump(repo_tempdir.name)
 
     cmd = f"git clone {bare_repo} {repo_tempdir.name}"
-    dump(cmd)
+    subprocess.run(cmd.split(), check=True)
+
+    cmd = "git config --global advice.detachedHead false"
     subprocess.run(cmd.split(), check=True)
 
     cmd = f"git -C {repo_tempdir.name} checkout {commit}"
@@ -92,10 +93,7 @@ def show_problems():
         print(f"{inst}: {problem}")
 
 
-def doit(dataset, model, instance_id):
-
-    entry = dataset[instance_id]
-    #dump(entry.keys())
+def doit(model, entry):
 
     github_url = 'https://github.com/'
     repo_url = github_url + entry['repo']
@@ -106,14 +104,14 @@ def doit(dataset, model, instance_id):
 
     git_tempdir = checkout_repo(repo_url, commit)
 
-    subprocess.run(f"git -C {git_tempdir.name} stash".split(), check=True)
-    uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
-    subprocess.run(f"git -C {git_tempdir.name} checkout -b {uniq_branch}".split(), check=True)
-
-    for fname in ".aider.chat.history.md .aider.input.history".split():
-        fname = Path(fname)
-        if fname.exists():
-            fname.unlink()
+    #subprocess.run(f"git -C {git_tempdir.name} stash".split(), check=True)
+    #uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
+    #subprocess.run(f"git -C {git_tempdir.name} checkout -b {uniq_branch}".split(), check=True)
+    #
+    #for fname in ".aider.chat.history.md .aider.input.history".split():
+    #    fname = Path(fname)
+    #    if fname.exists():
+    #        fname.unlink()
 
     gold_files = [Path(git_tempdir.name) / fname for fname in gold_files]
 
@@ -133,7 +131,6 @@ def doit(dataset, model, instance_id):
     )
     coder.show_announcements()
 
-    dump(coder.repo)
     messages = coder.format_messages()
     #utils.show_messages(messages)
 
@@ -148,36 +145,58 @@ def doit(dataset, model, instance_id):
 
     print(f"\nDiff between current state and commit {commit}:")
     print(diff_output)
-
-    model_name_or_path = f"aider--{model}"
-    model_name_or_path = model_name_or_path.replace("/", "--")
-
-    res = dict(
-        model_name_or_path=model_name_or_path,
-        instance_id=instance_id,
-        model_patch=diff_output,
-    )
-
-    return res
-
+    return diff_output
 
 
 def main():
 
     dataset = get_dataset()
 
-    #instance_id = 'django__django-12983'
-    instance_id = sys.argv[1]
-
     #model = "gpt-3.5-turbo"
-    model = "deepseek/deepseek-chat"
+    #model = "deepseek/deepseek-chat"
     #model = "openrouter/anthropic/claude-3-opus"
 
-    #with ChdirTemporaryDirectory():
-    res = doit(dataset, model, instance_id)
+    model = "gold"
 
-    out_fname = Path("tmp.jsonl")
-    out_fname.write_text(json.dumps(res) + "\n")
+    model_slug = model.replace("/", "--")
+    out_fname = model_slug + ".jsonl"
+    dump(out_fname)
+
+    done_instances = set()
+    if Path(out_fname).exists():
+        for line in open(out_fname):
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            done_instances.add(rec['instance_id'])
+
+    all_instances = sys.argv[1:]
+    if not all_instances:
+        all_instances = dataset.keys()
+
+    for instance_id in all_instances:
+        entry = dataset[instance_id]
+
+        if instance_id in done_instances:
+            print('skipping', instance_id)
+            continue
+
+        repo = entry['repo']
+        version = entry['version']
+
+        if model == "gold":
+            diff = entry['patch']
+        else:
+            diff = doit(model, entry)
+
+        res = dict(
+            model_name_or_path=model_slug,
+            instance_id=instance_id,
+            model_patch=diff,
+        )
+
+        with open(out_fname, "a") as fh:
+            fh.write(json.dumps(res) + "\n")
 
 if __name__ == '__main__':
     status = main()

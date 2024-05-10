@@ -1,4 +1,4 @@
-FROM continuumio/anaconda3
+FROM python:3.11
 RUN apt-get update
 RUN apt-get install -y less git build-essential
 

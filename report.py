@@ -12,10 +12,11 @@ from dump import dump
 
 from swebench.metrics.report import get_model_report
 
-model = "aider_openrouter_anthropic_claude-3-opus"
-predictions_path = "/app/tmp.jsonl"
-swe_bench_tasks = "/app/dataset.json"
-log_dir = "/logs/" + model
+model = sys.argv[1]
+
+predictions_path = f"{model}.jsonl"
+swe_bench_tasks = "dataset.json"
+log_dir = "/tmp/logs/" + model
 
 report = get_model_report(model, predictions_path, swe_bench_tasks, log_dir, verbose=True)
 
