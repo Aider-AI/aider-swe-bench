@@ -12,16 +12,42 @@ from dump import dump
 
 from swebench.metrics.report import get_model_report
 
-model = sys.argv[1]
+pred_path = sys.argv[1]
 
-predictions_path = f"{model}.jsonl"
+for line in open(pred_path):
+    break
+data = json.loads(line)
+
+model = data['model_name_or_path']
 swe_bench_tasks = "dataset.json"
-log_dir = "/tmp/logs/" + model
+log_dir = "logs"
 
-report = get_model_report(model, predictions_path, swe_bench_tasks, log_dir, verbose=True)
+report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
 
 #for k, v in report.items():
 #    print(f"- {k}: {len(v)}")
 
-
 dump(report)
+
+counts = dict( (k,len(v)) for k,v in report.items() )
+
+dump(counts)
+
+total = counts['generated'] + counts['no_generation']
+dump(total)
+missing_logs = total - counts['with_logs']
+dump(missing_logs)
+
+need_to_be_run = missing_logs - counts['no_generation']
+dump(need_to_be_run)
+
+should_count = total - need_to_be_run
+
+percent = counts['resolved'] * 100 / (counts['generated'] + counts['no_generation'])
+dump(percent)
+
+
+dump(should_count)
+percent_of_should_count = counts['resolved'] * 100 / should_count
+
+dump(percent_of_should_count)

@@ -154,9 +154,8 @@ def main():
 
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    #model = "openrouter/anthropic/claude-3-opus"
-
-    model = "gold"
+    model = "openrouter/anthropic/claude-3-opus"
+    #model = "gold"
 
     model_slug = model.replace("/", "--")
     out_fname = model_slug + ".jsonl"
