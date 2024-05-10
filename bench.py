@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import random
 import json
 import time
 import os
@@ -19,7 +20,8 @@ from aider.models import Model
 from aider import utils
 
 
-REPOS_DNAME = 'repos'
+REPOS_DNAME = Path('repos')
+CHAT_LOGS_DNAME = Path("chat-logs")
 
 import subprocess
 
@@ -42,7 +44,8 @@ def checkout_repo(url, commit):
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
 
-    bare_repo = Path(REPOS_DNAME) / repo_name
+    dump(repo_name)
+    bare_repo = REPOS_DNAME / repo_name
 
     if not bare_repo.exists():
         cmd = f"git clone --bare {url} {bare_repo}"
@@ -93,7 +96,7 @@ def show_problems():
         print(f"{inst}: {problem}")
 
 
-def doit(model, entry):
+def doit(model, entry, slug):
 
     github_url = 'https://github.com/'
     repo_url = github_url + entry['repo']
@@ -104,30 +107,26 @@ def doit(model, entry):
 
     git_tempdir = checkout_repo(repo_url, commit)
 
-    #subprocess.run(f"git -C {git_tempdir.name} stash".split(), check=True)
-    #uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
-    #subprocess.run(f"git -C {git_tempdir.name} checkout -b {uniq_branch}".split(), check=True)
-    #
-    #for fname in ".aider.chat.history.md .aider.input.history".split():
-    #    fname = Path(fname)
-    #    if fname.exists():
-    #        fname.unlink()
-
     gold_files = [Path(git_tempdir.name) / fname for fname in gold_files]
+
+    chat_history_file = CHAT_LOGS_DNAME / slug
+    if not chat_history_file.exists():
+        chat_history_file.mkdir()
+    chat_history_file = chat_history_file / (entry['instance_id'] + '.md')
 
     model = Model(model)
     io = InputOutput(
         pretty=True,
         yes=True,
-        chat_history_file="/dev/null",
+        chat_history_file=chat_history_file,
         input_history_file="/dev/null",
     )
     coder = Coder.create(
         main_model=model,
         io=io,
         git_dname=git_tempdir.name,
-        fnames=gold_files,
-        #map_tokens = 8192,
+        #fnames=gold_files,
+        map_tokens = 8192,
     )
     coder.show_announcements()
 
@@ -135,7 +134,7 @@ def doit(model, entry):
     #utils.show_messages(messages)
 
     problem = entry["problem_statement"]
-    #problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
+    problem = "Don't do any coding! Just tell me which 3-4 files should I look at to solve this?\n\n" + problem
 
     coder.run(problem)
 
@@ -157,7 +156,9 @@ def main():
     model = "openrouter/anthropic/claude-3-opus"
     #model = "gold"
 
-    model_slug = model.replace("/", "--")
+    prefix = "agent-"
+
+    model_slug = prefix + model.replace("/", "--")
     out_fname = model_slug + ".jsonl"
     dump(out_fname)
 
@@ -173,6 +174,9 @@ def main():
     if not all_instances:
         all_instances = dataset.keys()
 
+    all_instances = list(all_instances)
+    random.shuffle(all_instances)
+
     for instance_id in all_instances:
         entry = dataset[instance_id]
 
@@ -186,7 +190,7 @@ def main():
         if model == "gold":
             diff = entry['patch']
         else:
-            diff = doit(model, entry)
+            diff = doit(model, entry, model_slug)
 
         res = dict(
             model_name_or_path=model_slug,
