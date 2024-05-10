@@ -66,18 +66,30 @@ def checkout_repo(url, commit):
     return repo_dir
 
 
+DATASET = "princeton-nlp/SWE-bench_Lite"
 def get_dataset():
-    dataset = load_dataset("princeton-nlp/SWE-bench_Lite")
+    dataset = load_dataset(DATASET)
 
     res = dict()
     for entry in dataset['test']:
         res[entry['instance_id']] = entry
 
-    entries = [dict(e) for e in res.values()]
-    with open("dataset.json", "w") as f:
-        json.dump(entries, f)
-
     return res
+
+def dump_dataset():
+    dataset = load_dataset(DATASET)
+
+    entries = list(dataset['test'])
+    for entry in entries:
+        entry['FAIL_TO_PASS'] = json.loads(entry['FAIL_TO_PASS'])
+        entry['PASS_TO_PASS'] = json.loads(entry['PASS_TO_PASS'])
+
+    with open("dataset.json", "w") as f:
+        json.dump(entries, f, indent=4)
+
+    sys.exit()
+
+#dump_dataset()
 
 def show_problems():
     for inst,entry in dataset.items():
@@ -113,8 +125,9 @@ for fname in ".aider.chat.history.md .aider.input.history".split():
     if fname.exists():
         fname.unlink()
 
-model = "deepseek/deepseek-chat"
-#model = "openrouter/anthropic/claude-3-opus"
+#model = "deepseek/deepseek-chat"
+model = "openrouter/anthropic/claude-3-opus"
+
 model = Model(model)
 io = InputOutput(
     pretty=True,
@@ -132,7 +145,7 @@ coder.show_announcements()
 
 dump(coder.repo)
 messages = coder.format_messages()
-utils.show_messages(messages)
+#utils.show_messages(messages)
 
 problem = entry["problem_statement"]
 #problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
