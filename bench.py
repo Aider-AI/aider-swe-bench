@@ -16,7 +16,7 @@ from aider.io import InputOutput
 from aider.coders import Coder
 from aider.models import Model
 from aider import utils
-
+from aider.utils import ChdirTemporaryDirectory
 
 REPOS_DNAME = 'repos'
 
@@ -96,79 +96,94 @@ def show_problems():
         problem = entry['problem_statement'].splitlines()[0]
         print(f"{inst}: {problem}")
 
-dataset = get_dataset()
 
-#instance_id = 'django__django-12983'
-instance_id = sys.argv[1]
+def doit(dataset, model, instance_id):
 
-entry = dataset[instance_id]
-dump(entry.keys())
+    entry = dataset[instance_id]
+    #dump(entry.keys())
 
-github_url = 'https://github.com/'
-repo_url = github_url + entry['repo']
-commit = entry['base_commit']
+    github_url = 'https://github.com/'
+    repo_url = github_url + entry['repo']
+    commit = entry['base_commit']
 
-gold_patch = entry['patch']
-gold_files = files_in_patch(gold_patch)
+    gold_patch = entry['patch']
+    gold_files = files_in_patch(gold_patch)
 
-git_dname = checkout_repo(repo_url, commit)
-cwd = os.getcwd()
-os.chdir(git_dname)
+    git_dname = checkout_repo(repo_url, commit)
 
-subprocess.run("git stash".split(), check=True)
+    subprocess.run(f"git -C {git_dname} stash".split(), check=True)
+    uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
+    subprocess.run(f"git -C {git_dname} checkout -b {uniq_branch}".split(), check=True)
 
-uniq_branch = time.strftime(f"bench-%Y-%m-%d-%H-%M-%S.%f")
-subprocess.run(f"git checkout -b {uniq_branch}".split(), check=True)
+    for fname in ".aider.chat.history.md .aider.input.history".split():
+        fname = Path(fname)
+        if fname.exists():
+            fname.unlink()
 
-for fname in ".aider.chat.history.md .aider.input.history".split():
-    fname = Path(fname)
-    if fname.exists():
-        fname.unlink()
+    gold_files = [git_dname / fname for fname in gold_files]
 
-#model = "deepseek/deepseek-chat"
-model = "openrouter/anthropic/claude-3-opus"
+    model = Model(model)
+    io = InputOutput(
+        pretty=True,
+        yes=True,
+        chat_history_file="/dev/null",
+        input_history_file="/dev/null",
+    )
+    coder = Coder.create(
+        main_model=model,
+        io=io,
+        git_dname=git_dname,
+        fnames=gold_files,
+        #map_tokens = 8192,
+    )
+    coder.show_announcements()
 
-model = Model(model)
-io = InputOutput(
-    pretty=True,
-    yes=True,
-    chat_history_file="/dev/null",
-    input_history_file="/dev/null",
-)
-coder = Coder.create(
-    main_model=model,
-    io=io,
-    fnames=gold_files,
-    #map_tokens = 8192,
-)
-coder.show_announcements()
+    dump(coder.repo)
+    messages = coder.format_messages()
+    #utils.show_messages(messages)
 
-dump(coder.repo)
-messages = coder.format_messages()
-#utils.show_messages(messages)
+    problem = entry["problem_statement"]
+    #problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
 
-problem = entry["problem_statement"]
-#problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
+    coder.run(problem)
 
-coder.run(problem)
+    # Get the diff between the current state and the original commit
+    cmd = f"git  -C {git_dname} diff {commit}"
+    diff_output = subprocess.check_output(cmd.split()).decode()
 
-# Get the diff between the current state and the original commit
-cmd = f"git diff {commit}"
-diff_output = subprocess.check_output(cmd.split()).decode()
+    print(f"\nDiff between current state and commit {commit}:")
+    print(diff_output)
 
-print(f"\nDiff between current state and commit {commit}:")
-print(diff_output)
+    model_name_or_path = f"aider--{model}"
+    model_name_or_path = model_name_or_path.replace("/", "--")
 
-model_name_or_path = f"aider_{model}"
-model_name_or_path = model_name_or_path.replace("/", "_")
+    res = dict(
+        model_name_or_path=model_name_or_path,
+        instance_id=instance_id,
+        model_patch=diff_output,
+    )
 
-res = dict(
-    model_name_or_path=model_name_or_path,
-    instance_id=instance_id,
-    model_patch=diff_output,
-)
+    return res
 
-os.chdir(cwd)
 
-out_fname = Path("tmp.jsonl")
-out_fname.write_text(json.dumps(res) + "\n")
+
+def main():
+
+    dataset = get_dataset()
+
+    #instance_id = 'django__django-12983'
+    instance_id = sys.argv[1]
+
+    #model = "gpt-3.5-turbo"
+    model = "deepseek/deepseek-chat"
+    #model = "openrouter/anthropic/claude-3-opus"
+
+    #with ChdirTemporaryDirectory():
+    res = doit(dataset, model, instance_id)
+
+    out_fname = Path("tmp.jsonl")
+    out_fname.write_text(json.dumps(res) + "\n")
+
+if __name__ == '__main__':
+    status = main()
+    sys.exit(status)
