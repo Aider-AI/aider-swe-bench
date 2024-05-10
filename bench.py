@@ -146,4 +146,7 @@ res = dict(
     model_patch=diff_output,
 )
 
-# todo: save res as jsonl to tmp.jsonl
+import json
+
+with open("tmp.jsonl", "a") as f:
+    f.write(json.dumps(res) + "\n")
