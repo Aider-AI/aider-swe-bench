@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import time
 import os
 import sys
@@ -95,6 +96,7 @@ gold_patch = entry['patch']
 gold_files = files_in_patch(gold_patch)
 
 git_dname = checkout_repo(repo_url, commit)
+cwd = os.getcwd()
 os.chdir(git_dname)
 
 subprocess.run("git stash".split(), check=True)
@@ -146,8 +148,7 @@ res = dict(
     model_patch=diff_output,
 )
 
-import json
+os.chdir(cwd)
 
-tmp_jsonl = Path("tmp.jsonl")
-with tmp_jsonl.open("a") as f:
-    f.write(json.dumps(res) + "\n")
+out_fname = Path("tmp.jsonl")
+out_fname.write_text(json.dumps(res) + "\n")
