@@ -73,6 +73,9 @@ def get_dataset():
     for entry in dataset['test']:
         res[entry['instance_id']] = entry
 
+    with open("dataset.json", "w") as f:
+        json.dump(res, f)
+
     return res
 
 def show_problems():
