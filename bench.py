@@ -148,5 +148,6 @@ res = dict(
 
 import json
 
-with open("tmp.jsonl", "a") as f:
+tmp_jsonl = Path("tmp.jsonl")
+with tmp_jsonl.open("a") as f:
     f.write(json.dumps(res) + "\n")
