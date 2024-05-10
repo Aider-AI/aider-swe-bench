@@ -73,8 +73,9 @@ def get_dataset():
     for entry in dataset['test']:
         res[entry['instance_id']] = entry
 
+    entries = [dict(e) for e in res.values()]
     with open("dataset.json", "w") as f:
-        json.dump(res, f)
+        json.dump(entries, f)
 
     return res
 
@@ -145,8 +146,11 @@ diff_output = subprocess.check_output(cmd.split()).decode()
 print(f"\nDiff between current state and commit {commit}:")
 print(diff_output)
 
+model_name_or_path = f"aider_{model}"
+model_name_or_path = model_name_or_path.replace("/", "_")
+
 res = dict(
-    model_name_or_path=f"aider/{model}",
+    model_name_or_path=model_name_or_path,
     instance_id=instance_id,
     model_patch=diff_output,
 )
