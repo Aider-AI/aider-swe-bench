@@ -107,7 +107,9 @@ for fname in ".aider.chat.history.md .aider.input.history".split():
     if fname.exists():
         fname.unlink()
 
-model = Model("deepseek/deepseek-chat")
+model = "deepseek/deepseek-chat"
+#model = "openrouter/anthropic/claude-3-opus"
+model = Model(model)
 io = InputOutput(
     pretty=True,
     yes=True,
@@ -118,13 +120,13 @@ coder = Coder.create(
     main_model=model,
     io=io,
     fnames=gold_files,
-    map_tokens = 8192,
+    #map_tokens = 8192,
 )
 coder.show_announcements()
 
 dump(coder.repo)
 messages = coder.format_messages()
-#utils.show_messages(messages)
+utils.show_messages(messages)
 
 problem = entry["problem_statement"]
 #problem = "Don't do any coding! Just tell me which files should I look at to solve this?\n\n" + problem
@@ -137,3 +139,11 @@ diff_output = subprocess.check_output(cmd.split()).decode()
 
 print(f"\nDiff between current state and commit {commit}:")
 print(diff_output)
+
+res = dict(
+    model_name_or_path=f"aider/{model}",
+    instance_id=instance_id,
+    model_patch=diff_output,
+)
+
+# todo: save res as jsonl to tmp.jsonl
