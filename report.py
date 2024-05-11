@@ -19,7 +19,7 @@ for line in open(pred_path):
 data = json.loads(line)
 
 model = data['model_name_or_path']
-swe_bench_tasks = "dataset.json"
+swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
 log_dir = "logs"
 
 report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)

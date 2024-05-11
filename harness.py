@@ -79,29 +79,34 @@ def checkout_repo_url_commit(url, commit):
 
 
 DATASET = "princeton-nlp/SWE-bench_Lite"
+DATASET_JSON = DATASET.replace('/', '--') + '.json'
+dump(DATASET_JSON)
+
 def get_dataset():
-    dataset = load_dataset(DATASET)
+
+    fname = Path(DATASET_JSON)
+    if fname.exists():
+        dataset = json.loads(fname.read_text())
+    else:
+        dataset = load_dataset(DATASET)
+        dataset = dataset['test']
+        dump_dataset(dataset)
 
     res = dict()
-    for entry in dataset['test']:
+    for entry in dataset:
         res[entry['instance_id']] = entry
 
     return res
 
-def dump_dataset():
-    dataset = load_dataset(DATASET)
-
-    entries = list(dataset['test'])
+def dump_dataset(dataset):
+    entries = list(dataset)
     for entry in entries:
         entry['FAIL_TO_PASS'] = json.loads(entry['FAIL_TO_PASS'])
         entry['PASS_TO_PASS'] = json.loads(entry['PASS_TO_PASS'])
 
-    with open("dataset.json", "w") as f:
+    with open(DATASET_JSON, "w") as f:
         json.dump(entries, f, indent=4)
 
-    sys.exit()
-
-#dump_dataset()
 
 def show_problems(dataset):
     for inst,entry in dataset.items():

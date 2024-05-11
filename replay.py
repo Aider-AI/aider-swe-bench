@@ -18,21 +18,32 @@ from aider.io import InputOutput
 from aider.coders import Coder
 from aider.models import Model
 from aider import utils
-
+import harness
 
 def main():
+
+    dataset = harness.get_dataset()
+
     fnames = sys.argv[1:]
     for fname in fnames:
-        doit(fname)
+        doit(dataset, fname)
 
-def doit(fname):
-    text = Path(fname).read_text()
+def doit(dataset, fname):
+
+    fname = Path(fname)
+    text = fname.read_text()
     if 'InvalidEditBlock' not in text:
         return
 
+    instance_id = fname.with_suffix("").name
+    entry = dataset[instance_id]
+
     dump(fname)
+    dump(instance_id)
+    dump(entry)
+
     messages = utils.split_chat_history_markdown(text, include_tool=True)
-    utils.show_messages(messages)
+    #utils.show_messages(messages)
 
 
 if __name__ == '__main__':

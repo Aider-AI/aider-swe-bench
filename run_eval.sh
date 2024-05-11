@@ -11,7 +11,7 @@ cd $DIR/SWE-bench-docker
 
 python ./run_evaluation.py \
        --log_dir $DIR/logs \
-       --swe_bench_tasks $DIR/dataset.json \
+       --swe_bench_tasks $DIR/princeton-nlp--SWE-bench_Lite.json \
        --skip_existing \
        --predictions_path $DIR/$1
 
