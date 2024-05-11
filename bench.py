@@ -22,6 +22,7 @@ from aider import utils
 
 REPOS_DNAME = Path('repos')
 CHAT_LOGS_DNAME = Path("chat-logs")
+PREDS_DNAME = Path("predictions")
 
 import subprocess
 
@@ -176,7 +177,7 @@ def main():
     prefix = "2k-context-"
 
     model_slug = prefix + model.replace("/", "--")
-    out_fname = model_slug + ".jsonl"
+    out_fname = PREDS_DNAME / (model_slug + ".jsonl")
     dump(out_fname)
 
     done_instances = set()
