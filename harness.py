@@ -172,7 +172,15 @@ Don't suggest test files or doc files, just the source code that needs to be cha
 
     print(f"\nDiff between current state and commit {commit}:")
     print(diff_output)
-    return diff_output
+
+    res = dict(
+        model_patch=diff_output,
+        cost=coder.total_cost,
+        added_files=added_files,
+        gold_files=rel_gold_files,
+        edited_files=files_in_patch(diff_output),
+    )
+    return res
 
 
 def main():
@@ -180,12 +188,12 @@ def main():
     dataset = get_dataset()
 
     #model = "gpt-3.5-turbo"
-    model = "deepseek/deepseek-chat"
-    #model = "openrouter/anthropic/claude-3-opus"
+    #model = "deepseek/deepseek-chat"
+    model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
 
-    prefix = "2k-context-"
+    prefix = "better-edits-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
@@ -224,23 +232,25 @@ def main():
             print('skipping', instance_id)
             continue
 
+        dump(instance_id)
+
         repo = entry['repo']
         version = entry['version']
 
         if model == "gold":
-            diff = entry['patch']
+            res = dict(model_patch=entry['patch'])
         else:
             chat_history_file = chat_history_dname / (entry['instance_id'] + '.md')
-            diff = doit(model, entry, chat_history_file)
+            res = doit(model, entry, chat_history_file)
 
-        res = dict(
+        result = dict(
             model_name_or_path=model_slug,
             instance_id=instance_id,
-            model_patch=diff,
         )
+        result.update(res)
 
         with open(out_fname, "a") as fh:
-            fh.write(json.dumps(res) + "\n")
+            fh.write(json.dumps(result) + "\n")
 
 if __name__ == '__main__':
     status = main()

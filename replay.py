@@ -87,6 +87,7 @@ def doit(dataset, fname):
     coder.partial_response_content = bad_edit
 
     coder.apply_updates()
+    input()
 
 if __name__ == '__main__':
     status = main()
