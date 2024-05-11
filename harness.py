@@ -84,7 +84,6 @@ def checkout_repo_url_commit(url, commit, dname):
 
 DATASET = "princeton-nlp/SWE-bench_Lite"
 DATASET_JSON = DATASET.replace('/', '--') + '.json'
-dump(DATASET_JSON)
 
 def get_dataset():
 
@@ -138,8 +137,10 @@ def doit(model, entry, chat_history_file):
         git_dname=git_tempdir,
         #fnames=gold_files,
         map_tokens = 2048,
+        stream=False,
     )
     coder.show_announcements()
+    coder.max_apply_update_errors = 2
 
     messages = coder.format_messages()
     #utils.show_messages(messages)
@@ -147,7 +148,7 @@ def doit(model, entry, chat_history_file):
     problem_prefix = """Don't do any coding yet!
 First, just tell me **which files are the most likely to need changes to solve this**?
 Be specific, don't mention irrelevant files.
-But if you are unsure, give me a longer list of files.
+List at *most* 3 files.
 
 Don't suggest test files or doc files, just the source code that needs to be changed.
 

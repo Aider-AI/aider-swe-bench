@@ -33,7 +33,7 @@ def doit(dataset, fname):
 
     fname = Path(fname)
     text = fname.read_text()
-    if 'InvalidEditBlock' not in text:
+    if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
         return
 
     instance_id = fname.with_suffix("").name
@@ -51,7 +51,7 @@ def doit(dataset, fname):
     bad_edit = min(edits)
 
     edit_error = messages[bad_edit+1]['content']
-    assert 'InvalidEditBlock' in edit_error, edit_error
+    #assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
 
     edit_error = messages[bad_edit+2]['content']
 
