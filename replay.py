@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import tempfile
+import shutil
 
 from pathlib import Path
 from collections import defaultdict
@@ -40,11 +41,52 @@ def doit(dataset, fname):
 
     dump(fname)
     dump(instance_id)
-    dump(entry)
 
     messages = utils.split_chat_history_markdown(text, include_tool=True)
-    #utils.show_messages(messages)
+    edits = [
+        i
+        for i in range(len(messages))
+        if messages[i]['role'] == 'assistant' and '<<<<<<' in messages[i]['content']
+    ]
+    bad_edit = min(edits)
 
+    edit_error = messages[bad_edit+1]['content']
+    assert 'InvalidEditBlock' in edit_error, edit_error
+
+    edit_error = messages[bad_edit+2]['content']
+
+    #utils.show_messages(messages)
+    bad_edit = messages[bad_edit]['content']
+
+    gold_patch = entry['patch']
+    print(gold_patch)
+    print(bad_edit)
+    print(edit_error)
+
+    tmp_dname = Path("tmp.replay")
+    if tmp_dname.exists():
+        shutil.rmtree(tmp_dname)
+
+    repo_dname = harness.checkout_repo(entry, tmp_dname)
+
+    model = "deepseek/deepseek-chat"
+    model = Model(model)
+    io = InputOutput(
+        pretty=False,
+        yes=True,
+        chat_history_file="/dev/null",
+        input_history_file="/dev/null",
+    )
+    coder = Coder.create(
+        main_model=model,
+        io=io,
+        git_dname=repo_dname,
+    )
+
+    coder.check_for_file_mentions(messages[2]['content'])
+    coder.partial_response_content = bad_edit
+
+    coder.apply_updates()
 
 if __name__ == '__main__':
     status = main()

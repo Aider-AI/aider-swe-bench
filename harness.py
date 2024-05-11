@@ -39,19 +39,19 @@ def files_in_patch(patch):
                 files.append(fname)
     return files
 
-def checkout_repo(entry):
+def checkout_repo(entry, dname=None):
     github_url = 'https://github.com/'
     repo_url = github_url + entry['repo']
     commit = entry['base_commit']
 
     print(repo_url, commit)
 
-    git_tempdir = checkout_repo_url_commit(repo_url, commit)
+    git_tempdir = checkout_repo_url_commit(repo_url, commit, dname)
 
     return git_tempdir
 
 
-def checkout_repo_url_commit(url, commit):
+def checkout_repo_url_commit(url, commit, dname):
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
@@ -63,19 +63,23 @@ def checkout_repo_url_commit(url, commit):
         cmd = f"git clone --bare {url} {bare_repo}"
         subprocess.run(cmd.split(), check=True)
 
-    repo_tempdir = tempfile.TemporaryDirectory().name
+    if dname:
+        Path(dname).mkdir()
+        repo_dname = dname
+    else:
+        repo_dname = tempfile.TemporaryDirectory().name
 
-    cmd = f"git clone {bare_repo} {repo_tempdir}"
+    cmd = f"git clone {bare_repo} {repo_dname}"
     subprocess.run(cmd.split(), check=True)
 
-    cmd = f"git -c advice.detachedHead=false -C {repo_tempdir} checkout {commit}"
+    cmd = f"git -c advice.detachedHead=false -C {repo_dname} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
 
     #IGNORE = '*test*\n'
-    #ignore = Path(repo_tempdir) / '.aiderignore'
+    #ignore = Path(repo_dname) / '.aiderignore'
     #ignore.write_text(IGNORE)
 
-    return repo_tempdir
+    return repo_dname
 
 
 DATASET = "princeton-nlp/SWE-bench_Lite"
