@@ -19,5 +19,5 @@ cd $DIR
 
 ./report.py $DIR/$1 | tee tmp.evalreport.txt
 
-rsync -avz tmp.evalreport.txt chunder.net:www/chunder.net/tmp.evalreport.txt
+rsync -az tmp.evalreport.txt chunder.net:www/chunder.net/tmp.evalreport.txt
 

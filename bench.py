@@ -39,6 +39,8 @@ def files_in_patch(patch):
     return files
 
 
+IGNORE = '*test*\n'
+
 def checkout_repo(url, commit):
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
@@ -61,6 +63,9 @@ def checkout_repo(url, commit):
 
     cmd = f"git -C {repo_tempdir.name} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
+
+    #ignore = Path(repo_tempdir.name) / '.aiderignore'
+    #ignore.write_text(IGNORE)
 
     return repo_tempdir
 
@@ -103,11 +108,11 @@ def doit(model, entry, chat_history_file):
     commit = entry['base_commit']
 
     gold_patch = entry['patch']
-    gold_files = files_in_patch(gold_patch)
+    rel_gold_files = files_in_patch(gold_patch)
 
     git_tempdir = checkout_repo(repo_url, commit)
 
-    gold_files = [Path(git_tempdir.name) / fname for fname in gold_files]
+    gold_files = [Path(git_tempdir.name) / fname for fname in rel_gold_files]
 
     model = Model(model)
     io = InputOutput(
@@ -121,17 +126,33 @@ def doit(model, entry, chat_history_file):
         io=io,
         git_dname=git_tempdir.name,
         #fnames=gold_files,
-        map_tokens = 8192,
+        map_tokens = 2048,
     )
     coder.show_announcements()
 
     messages = coder.format_messages()
     #utils.show_messages(messages)
 
+    problem_prefix = """Don't do any coding yet!
+First, just tell me **which files are the most likely to need changes to solve this**?
+Be specific, don't mention irrelevant files.
+But if you are unsure, give me a longer list of files.
+
+Don't suggest test files or doc files, just the source code that needs to be changed.
+
+
+"""
+
     problem = entry["problem_statement"]
-    problem = "Don't do any coding! Just tell me which 3-4 files should I look at to solve this?\n\n" + problem
+    problem = problem_prefix + problem
+
+    dump(rel_gold_files)
 
     coder.run(problem)
+
+    dump(rel_gold_files)
+    added_files = coder.get_inchat_relative_files()
+    dump(added_files)
 
     # Get the diff between the current state and the original commit
     cmd = f"git  -C {git_tempdir.name} diff {commit}"
@@ -149,9 +170,10 @@ def main():
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
     model = "openrouter/anthropic/claude-3-opus"
+    #model = "gpt-4-1106-preview"
     #model = "gold"
 
-    prefix = "agent-"
+    prefix = "2k-context-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = model_slug + ".jsonl"
@@ -169,12 +191,19 @@ def main():
     if not all_instances:
         all_instances = dataset.keys()
 
+    _all_instances = [
+    "sympy__sympy-14774",
+    "django__django-14915",
+    "sympy__sympy-20590",
+    "django__django-10914",
+    "sympy__sympy-22714"
+    ]
+
     all_instances = list(all_instances)
     random.shuffle(all_instances)
 
-    chat_history_dname = CHAT_LOGS_DNAME / slug
-    if not chat_history_dname.exists():
-        chat_history_dname.mkdir()
+    chat_history_dname = CHAT_LOGS_DNAME / model_slug
+    chat_history_dname.mkdir(exist_ok=True)
 
     for instance_id in all_instances:
         entry = dataset[instance_id]

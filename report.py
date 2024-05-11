@@ -44,12 +44,11 @@ dump(need_to_be_run)
 should_count = total - need_to_be_run
 
 percent = counts['resolved'] * 100 / (counts['generated'] + counts['no_generation'])
-dump(percent)
-
+print(f"{percent=:.1f}")
 
 dump(should_count)
 percent_of_should_count = counts['resolved'] * 100 / should_count
+print(f"{percent_of_should_count=:.1f}")
 
-dump(percent_of_should_count)
 
-dump(report['resolved'])
+#dump(report['resolved'])
