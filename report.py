@@ -27,7 +27,7 @@ report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=Tr
 #for k, v in report.items():
 #    print(f"- {k}: {len(v)}")
 
-dump(report)
+#dump(report)
 
 counts = dict( (k,len(v)) for k,v in report.items() )
 
@@ -51,3 +51,5 @@ dump(should_count)
 percent_of_should_count = counts['resolved'] * 100 / should_count
 
 dump(percent_of_should_count)
+
+dump(report['resolved'])

@@ -96,7 +96,7 @@ def show_problems():
         print(f"{inst}: {problem}")
 
 
-def doit(model, entry, slug):
+def doit(model, entry, chat_history_file):
 
     github_url = 'https://github.com/'
     repo_url = github_url + entry['repo']
@@ -108,11 +108,6 @@ def doit(model, entry, slug):
     git_tempdir = checkout_repo(repo_url, commit)
 
     gold_files = [Path(git_tempdir.name) / fname for fname in gold_files]
-
-    chat_history_file = CHAT_LOGS_DNAME / slug
-    if not chat_history_file.exists():
-        chat_history_file.mkdir()
-    chat_history_file = chat_history_file / (entry['instance_id'] + '.md')
 
     model = Model(model)
     io = InputOutput(
@@ -177,6 +172,10 @@ def main():
     all_instances = list(all_instances)
     random.shuffle(all_instances)
 
+    chat_history_dname = CHAT_LOGS_DNAME / slug
+    if not chat_history_dname.exists():
+        chat_history_dname.mkdir()
+
     for instance_id in all_instances:
         entry = dataset[instance_id]
 
@@ -190,7 +189,8 @@ def main():
         if model == "gold":
             diff = entry['patch']
         else:
-            diff = doit(model, entry, model_slug)
+            chat_history_file = chat_history_dname / (entry['instance_id'] + '.md')
+            diff = doit(model, entry, chat_history_file)
 
         res = dict(
             model_name_or_path=model_slug,
