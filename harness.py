@@ -39,10 +39,15 @@ def files_in_patch(patch):
                 files.append(fname)
     return files
 
+def checkout_repo(entry):
+    github_url = 'https://github.com/'
+    repo_url = github_url + entry['repo']
+    commit = entry['base_commit']
+    git_tempdir = checkout_repo_url_commit(repo_url, commit)
+    return git_tempdir
 
-IGNORE = '*test*\n'
 
-def checkout_repo(url, commit):
+def checkout_repo_url_commit(url, commit):
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
@@ -59,12 +64,10 @@ def checkout_repo(url, commit):
     cmd = f"git clone {bare_repo} {repo_tempdir.name}"
     subprocess.run(cmd.split(), check=True)
 
-    cmd = "git config --global advice.detachedHead false"
+    cmd = f"git -c advice.detachedHead=false -C {repo_tempdir.name} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
 
-    cmd = f"git -C {repo_tempdir.name} checkout {commit}"
-    subprocess.run(cmd.split(), check=True)
-
+    #IGNORE = '*test*\n'
     #ignore = Path(repo_tempdir.name) / '.aiderignore'
     #ignore.write_text(IGNORE)
 
@@ -96,23 +99,17 @@ def dump_dataset():
 
 #dump_dataset()
 
-def show_problems():
+def show_problems(dataset):
     for inst,entry in dataset.items():
         problem = entry['problem_statement'].splitlines()[0]
         print(f"{inst}: {problem}")
 
 
 def doit(model, entry, chat_history_file):
-
-    github_url = 'https://github.com/'
-    repo_url = github_url + entry['repo']
-    commit = entry['base_commit']
+    git_tempdir = checkout_repo(entry)
 
     gold_patch = entry['patch']
     rel_gold_files = files_in_patch(gold_patch)
-
-    git_tempdir = checkout_repo(repo_url, commit)
-
     gold_files = [Path(git_tempdir.name) / fname for fname in rel_gold_files]
 
     model = Model(model)
@@ -169,8 +166,8 @@ def main():
     dataset = get_dataset()
 
     #model = "gpt-3.5-turbo"
-    #model = "deepseek/deepseek-chat"
-    model = "openrouter/anthropic/claude-3-opus"
+    model = "deepseek/deepseek-chat"
+    #model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
 
