@@ -43,7 +43,11 @@ def checkout_repo(entry):
     github_url = 'https://github.com/'
     repo_url = github_url + entry['repo']
     commit = entry['base_commit']
+
+    print(repo_url, commit)
+
     git_tempdir = checkout_repo_url_commit(repo_url, commit)
+
     return git_tempdir
 
 
@@ -52,23 +56,23 @@ def checkout_repo_url_commit(url, commit):
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
 
-    dump(repo_name)
+    #dump(repo_name)
     bare_repo = REPOS_DNAME / repo_name
 
     if not bare_repo.exists():
         cmd = f"git clone --bare {url} {bare_repo}"
         subprocess.run(cmd.split(), check=True)
 
-    repo_tempdir = tempfile.TemporaryDirectory()
+    repo_tempdir = tempfile.TemporaryDirectory().name
 
-    cmd = f"git clone {bare_repo} {repo_tempdir.name}"
+    cmd = f"git clone {bare_repo} {repo_tempdir}"
     subprocess.run(cmd.split(), check=True)
 
-    cmd = f"git -c advice.detachedHead=false -C {repo_tempdir.name} checkout {commit}"
+    cmd = f"git -c advice.detachedHead=false -C {repo_tempdir} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
 
     #IGNORE = '*test*\n'
-    #ignore = Path(repo_tempdir.name) / '.aiderignore'
+    #ignore = Path(repo_tempdir) / '.aiderignore'
     #ignore.write_text(IGNORE)
 
     return repo_tempdir
@@ -110,7 +114,7 @@ def doit(model, entry, chat_history_file):
 
     gold_patch = entry['patch']
     rel_gold_files = files_in_patch(gold_patch)
-    gold_files = [Path(git_tempdir.name) / fname for fname in rel_gold_files]
+    gold_files = [Path(git_tempdir) / fname for fname in rel_gold_files]
 
     model = Model(model)
     io = InputOutput(
@@ -122,7 +126,7 @@ def doit(model, entry, chat_history_file):
     coder = Coder.create(
         main_model=model,
         io=io,
-        git_dname=git_tempdir.name,
+        git_dname=git_tempdir,
         #fnames=gold_files,
         map_tokens = 2048,
     )
@@ -153,7 +157,8 @@ Don't suggest test files or doc files, just the source code that needs to be cha
     dump(added_files)
 
     # Get the diff between the current state and the original commit
-    cmd = f"git  -C {git_tempdir.name} diff {commit}"
+    commit = entry['base_commit']
+    cmd = f"git -C {git_tempdir} diff {commit}"
     diff_output = subprocess.check_output(cmd.split()).decode()
 
     print(f"\nDiff between current state and commit {commit}:")
