@@ -33,8 +33,8 @@ def doit(dataset, fname):
 
     fname = Path(fname)
     text = fname.read_text()
-    if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
-        return
+    #if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
+    #    return
 
     instance_id = fname.with_suffix("").name
     entry = dataset[instance_id]
@@ -43,25 +43,6 @@ def doit(dataset, fname):
     dump(instance_id)
 
     messages = utils.split_chat_history_markdown(text, include_tool=True)
-    edits = [
-        i
-        for i in range(len(messages))
-        if messages[i]['role'] == 'assistant' and '<<<<<<' in messages[i]['content']
-    ]
-    bad_edit = min(edits)
-
-    edit_error = messages[bad_edit+1]['content']
-    #assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
-
-    edit_error = messages[bad_edit+2]['content']
-
-    #utils.show_messages(messages)
-    bad_edit = messages[bad_edit]['content']
-
-    gold_patch = entry['patch']
-    print(gold_patch)
-    print(bad_edit)
-    print(edit_error)
 
     tmp_dname = Path("tmp.replay")
     if tmp_dname.exists():
@@ -83,7 +64,35 @@ def doit(dataset, fname):
         git_dname=repo_dname,
     )
 
-    coder.check_for_file_mentions(messages[2]['content'])
+    dump(messages[3]['content'])
+    coder.check_for_file_mentions(messages[3]['content'])
+
+    edits = [
+        i
+        for i in range(len(messages))
+        if messages[i]['role'] == 'assistant' and '<<<<<<' in messages[i]['content']
+    ]
+    bad_edit = min(edits)
+
+    try:
+        edit_error = messages[bad_edit+1]['content']
+    except IndexError:
+        print("No edit error message??")
+        input()
+        return
+
+    #assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
+
+    edit_error = messages[bad_edit+2]['content']
+
+    #utils.show_messages(messages)
+    bad_edit = messages[bad_edit]['content']
+
+    gold_patch = entry['patch']
+    print(gold_patch)
+    print(bad_edit)
+    print(edit_error)
+
     coder.partial_response_content = bad_edit
 
     coder.apply_updates()
