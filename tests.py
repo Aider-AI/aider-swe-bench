@@ -34,6 +34,9 @@ new file mode 100644
 index 0000000..e69de29
 '''
 
+    #test_cmd = './tests/runtests.py --verbosity 3 test_utils.tests'
+    dump(test_cmd)
+
     task_instance = {
         "repo": task["repo"],
         "version": task["version"],
@@ -41,7 +44,7 @@ index 0000000..e69de29
         "instance_id": prediction["instance_id"],
         "model_name_or_path": prediction["model_name_or_path"],
         "model_patch": prediction["model_patch"],
-        "test_patch": patch,
+        "test_patch": noop_test_patch,
         "test_directives": test_directives,
         "test_cmd": test_cmd
     }
@@ -55,15 +58,28 @@ index 0000000..e69de29
         run_docker_evaluation(task_instance, namespace, log_dir, timeout, log_suffix)
     )
 
+    model = prediction["model_name_or_path"]
+    log_fname = Path(log_dir) / f'{instance_id}.{model}.eval.log'
+
+    dump(log_fname)
+
+    log_text = log_fname.read_text()
+    log_lines = log_text.splitlines()
+    log_lines = [l for l in log_lines if l.startswith(">>>>")]
+    print('\n'.join(log_lines))
+
 
 
 pred_path = "predictions/oracle-openrouter--anthropic--claude-3-opus.jsonl"
 predictions = [json.loads(line) for line in open(pred_path)]
 
-iid = "sympy__sympy-12236"
+#iid = "sympy__sympy-12236"
+#prediction = [p for p in predictions if p['instance_id'] == iid][0]
+#assert prediction['model_patch']
 
-prediction = [p for p in predictions if p['instance_id'] == iid][0]
-
-assert prediction['model_patch']
-
-test_prediction(prediction)
+iid = 'sphinx-doc__sphinx-8474'
+for prediction in predictions:
+    if iid and prediction['instance_id'] != iid:
+        continue
+    if prediction['model_patch']:
+        test_prediction(prediction)

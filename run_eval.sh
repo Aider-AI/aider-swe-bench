@@ -9,6 +9,9 @@ DIR=/Users/gauthier/Projects/swe-bench
 
 cd $DIR/SWE-bench-docker
 
+LOGDIR=`basename $1 | cut -d. -f1`
+echo $LOGDIR
+
 python ./run_evaluation.py \
        --log_dir $DIR/logs \
        --swe_bench_tasks $DIR/princeton-nlp--SWE-bench_Lite.json \

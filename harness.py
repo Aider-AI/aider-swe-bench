@@ -118,6 +118,8 @@ def show_problems(dataset):
 
 
 def doit(model, entry, chat_history_file):
+    oracle = False
+
     git_tempdir = checkout_repo(entry)
 
     gold_patch = entry['patch']
@@ -131,14 +133,20 @@ def doit(model, entry, chat_history_file):
         chat_history_file=chat_history_file,
         input_history_file="/dev/null",
     )
-    coder = Coder.create(
+    kwargs = dict(
         main_model=model,
         io=io,
         git_dname=git_tempdir,
-        #fnames=gold_files,
-        map_tokens = 2048,
+
+        #map_tokens = 2048,
         stream=False,
+        auto_commits=False,
     )
+    if oracle:
+        kwargs['fnames'] = gold_files
+
+    coder = Coder.create(**kwargs)
+
     coder.show_announcements()
     coder.max_apply_update_errors = 2
 
@@ -146,10 +154,8 @@ def doit(model, entry, chat_history_file):
     #utils.show_messages(messages)
 
     problem_prefix = """Don't do any coding yet!
-First, just tell me **which files are the most likely to need changes to solve this**?
-Be specific, don't mention irrelevant files.
-If you are confident, *just* list the files that need to be changed.
-If you are unsure, give me a list of up to 3-5 files which might need to be changed.
+First, just tell me which files are the most likely to **need changes** to solve this?
+If you are unsure, give me a longer list of files.
 
 Don't suggest test files or doc files, just the source code that needs to be changed.
 
@@ -157,7 +163,9 @@ Don't suggest test files or doc files, just the source code that needs to be cha
 """
 
     problem = entry["problem_statement"]
-    problem = problem_prefix + problem
+
+    if not oracle:
+        problem = problem_prefix + problem
 
     dump(rel_gold_files)
 
@@ -195,7 +203,8 @@ def main():
     #model = "gpt-4-1106-preview"
     #model = "gold"
 
-    prefix = "better-edits-"
+    #prefix = "oracle-"
+    prefix = "relaxed-add-files-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
@@ -212,14 +221,6 @@ def main():
     all_instances = sys.argv[1:]
     if not all_instances:
         all_instances = dataset.keys()
-
-    _all_instances = [
-    "sympy__sympy-14774",
-    "django__django-14915",
-    "sympy__sympy-20590",
-    "django__django-10914",
-    "sympy__sympy-22714"
-    ]
 
     all_instances = list(all_instances)
     random.shuffle(all_instances)
