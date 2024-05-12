@@ -73,6 +73,7 @@ def doit(dataset, fname):
         if messages[i]['role'] == 'assistant' and '<<<<<<' in messages[i]['content']
     ]
     bad_edit = min(edits)
+    dump(edits)
 
     try:
         edit_error = messages[bad_edit+1]['content']

@@ -44,8 +44,11 @@ missing_logs = total - counts['with_logs']
 dump(missing_logs)
 
 percent = counts['resolved'] * 100 / (counts['generated'] + counts['no_generation'])
-print(f"{percent= :.1f}")
+print(f"{percent= :.1f}%")
 
+print()
+
+# NEED TO BE RUN?
 need_to_be_run = missing_logs - counts['no_generation']
 if need_to_be_run:
     dump(need_to_be_run)
@@ -56,9 +59,13 @@ if need_to_be_run:
     percent_of_should = counts['resolved'] * 100 / should_count
     print(f"{percent_of_should=:.1f}")
 
+
+# load predictions
+predictions = [json.loads(line) for line in open(pred_path)]
+
+# COSTS
 costs = []
-for line in open(pred_path):
-    data = json.loads(line)
+for data in predictions:
     cost = data.get('cost')
     if cost is not None and cost > 0:
         costs.append(cost)
@@ -73,3 +80,44 @@ if len(costs):
     num_instances = len(json.load(open(swe_bench_tasks)))
     expected_cost = num_instances * avg_cost
     print(f"expected_cost: ${expected_cost:.2f}")
+
+    print()
+
+# added gold files?
+
+total_gold = 0
+total_added = 0
+
+gold_timeline = ''
+for data in predictions:
+    gold_files = set(data.get('gold_files', []))
+    added_files = set(data.get('added_files', []))
+
+    if not gold_files:
+        gold_timeline += '.'
+        continue
+
+    total_gold += 1
+    if added_files.intersection(gold_files) == gold_files:
+        total_added += 1
+        gold_timeline += 'G'
+    else:
+        gold_timeline += '_'
+
+#dump(total_gold)
+#dump(total_added)
+pct_added = total_added / total_gold * 100
+print(f"pct_gold_added: {pct_added:.1f}%")
+
+# Resolved timeline
+
+resolved_timeline = ''
+for data in predictions:
+    if data['instance_id'] in report['resolved']:
+        resolved_timeline += 'R'
+    else:
+        resolved_timeline += '_'
+
+print()
+print(gold_timeline)
+print(resolved_timeline)

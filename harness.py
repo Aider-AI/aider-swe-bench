@@ -148,7 +148,8 @@ def doit(model, entry, chat_history_file):
     problem_prefix = """Don't do any coding yet!
 First, just tell me **which files are the most likely to need changes to solve this**?
 Be specific, don't mention irrelevant files.
-List at *most* 3 files.
+If you are confident, *just* list the files that need to be changed.
+If you are unsure, give me a list of up to 3-5 files which might need to be changed.
 
 Don't suggest test files or doc files, just the source code that needs to be changed.
 
