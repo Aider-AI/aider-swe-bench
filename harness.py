@@ -137,8 +137,7 @@ def doit(model, entry, chat_history_file):
         main_model=model,
         io=io,
         git_dname=git_tempdir,
-
-        #map_tokens = 2048,
+        map_tokens = 2048,
         stream=False,
         auto_commits=False,
     )
@@ -150,12 +149,13 @@ def doit(model, entry, chat_history_file):
     coder.show_announcements()
     coder.max_apply_update_errors = 2
 
-    messages = coder.format_messages()
+    #messages = coder.format_messages()
     #utils.show_messages(messages)
 
     problem_prefix = """Don't do any coding yet!
 First, just tell me which files are the most likely to **need changes** to solve this?
-If you are unsure, give me a longer list of files.
+Only include the 1-2 file or files that are most likely to actually need to be edited.
+Don't include files that might contain relevant context, just files that will need to be changed.
 
 Don't suggest test files or doc files, just the source code that needs to be changed.
 
@@ -180,6 +180,10 @@ Don't suggest test files or doc files, just the source code that needs to be cha
     cmd = f"git -C {git_tempdir} diff {commit}"
     diff_output = subprocess.check_output(cmd.split()).decode()
 
+    if not diff_output:
+        coder.run("Please try and fix the issue I provided! Let me know if you need to edit a different file.")
+        diff_output = subprocess.check_output(cmd.split()).decode()
+
     print(f"\nDiff between current state and commit {commit}:")
     print(diff_output)
 
@@ -199,9 +203,11 @@ def main():
 
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    model = "openrouter/anthropic/claude-3-opus"
+    #model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
+
+    model = "openai/gpt-4o"
 
     #prefix = "oracle-"
     prefix = "relaxed-add-files-"

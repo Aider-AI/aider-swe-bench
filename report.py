@@ -85,8 +85,8 @@ if len(costs):
 
 # added gold files?
 
-total_gold = 0
-total_added = 0
+total_with_gold_attr = 0
+total_added_gold = 0
 gold_resolved = 0
 
 added_timeline = ''
@@ -96,7 +96,7 @@ for data in predictions:
     added_files = set(data.get('added_files', []))
 
     resolved = (data['instance_id'] in report['resolved'])
-    gold = (added_files.intersection(gold_files) == gold_files) and gold_files
+    added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
 
     if added_files:
         added_timeline += str(len(added_files))
@@ -104,32 +104,32 @@ for data in predictions:
         added_timeline += '_'
 
     if gold_files:
-        total_gold += 1
-        if gold:
-            total_added += 1
+        total_with_gold_attr += 1
+    if added_gold:
+        total_added_gold += 1
 
     if not gold_files and not resolved:
         timeline += '.'
-    elif gold and resolved:
+    elif added_gold and resolved:
         timeline += 'R'
         gold_resolved += 1
-    elif gold and not resolved:
+    elif added_gold and not resolved:
         timeline += 'g'
-    elif not gold and not resolved:
+    elif not added_gold and not resolved:
         timeline += '_'
-    elif not gold and resolved:
+    elif not added_gold and resolved:
         timeline += '!'
         #print(data['instance_id'])
 
-#dump(total_gold)
-#dump(total_added)
-if total_gold:
-    pct_added = total_added / total_gold * 100
-    print(f"pct_gold_added: {pct_added:.1f}%")
+dump(total_with_gold_attr)
+dump(total_added_gold)
+if total_with_gold_attr:
+    pct_added = total_added_gold / total_with_gold_attr * 100
+    print(f"pct_added_gold: {pct_added:.1f}%")
 
 
-    pct_gold_resolved = gold_resolved / total_gold * 100
-    print(f"pct_gold_resolved: {pct_gold_resolved:.1f}%")
+    pct_added_gold_resolved = gold_resolved / total_added_gold * 100
+    print(f"pct_added_gold_resolved: {pct_added_gold_resolved:.1f}%")
 
     print()
 

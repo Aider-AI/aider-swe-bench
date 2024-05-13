@@ -15,6 +15,11 @@ from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 
 from harness import get_dataset
 
+NOOP_PATCH = '''diff --git a/empty.file.{nonce}.ignore b/empty.file.{nonce}.ignore
+new file mode 100644
+index 0000000..e69de29
+'''
+
 
 
 def test_prediction(prediction):
@@ -29,11 +34,6 @@ def test_prediction(prediction):
     test_directives = get_test_directives(task)
     test_cmd = f"{test_type} {' '.join(test_directives)}"
 
-    noop_test_patch = '''diff --git a/emptyfile2.txt b/emptyfile2.txt
-new file mode 100644
-index 0000000..e69de29
-'''
-
     #test_cmd = './tests/runtests.py --verbosity 3 test_utils.tests'
     dump(test_cmd)
 
@@ -43,8 +43,8 @@ index 0000000..e69de29
         "base_commit": task["base_commit"],
         "instance_id": prediction["instance_id"],
         "model_name_or_path": prediction["model_name_or_path"],
-        "model_patch": prediction["model_patch"],
-        "test_patch": noop_test_patch,
+        "model_patch": NOOP_PATCH.format(nonce="model_patch"), # prediction["model_patch"],
+        "test_patch": NOOP_PATCH.format(nonce="test_patch"), # task['test_patch']
         "test_directives": test_directives,
         "test_cmd": test_cmd
     }
