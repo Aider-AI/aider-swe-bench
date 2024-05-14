@@ -9,19 +9,28 @@ DIR=/Users/gauthier/Projects/swe-bench
 
 cd $DIR/SWE-bench-docker
 
-LOGDIR=`basename $1 | cut -d. -f1`
+LOGDIR=`basename $1`
 echo $LOGDIR
 
-python ./run_evaluation.py \
+JSONL=$DIR/${1}.jsonl
+cp /dev/null $JSONL
+echo $JSONL
+
+for file in $DIR/$1/*.json; do
+    echo $file
+    cat $file | python3 -m json.tool --no-indent >> $JSONL
+done
+
+echo python ./run_evaluation.py \
        --log_dir $DIR/logs \
        --swe_bench_tasks $DIR/princeton-nlp--SWE-bench_Lite.json \
        --skip_existing \
-       --predictions_path $DIR/$1 \
+       --predictions_path $JSONL \
        || true
 
 cd $DIR
 
-./report.py $DIR/$1 | tee tmp.evalreport.txt
+./report.py $JSONL | tee tmp.evalreport.txt
 
 rsync -az tmp.evalreport.txt chunder.net:www/chunder.net/tmp.evalreport.txt
 

@@ -118,15 +118,32 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
-def doit(model, entry, chat_history_file):
-    instance_id = entry['instance_id']
+def process_one_instance(entry, model, out_dname):
+
     oracle = False
+    just_check_repo_map = False
+
+    instance_id = entry['instance_id']
+
+    print("="*60)
+    dump(instance_id)
+    print("="*60)
+    problem = entry["problem_statement"]
+    print(problem)
+
+    repo = entry['repo']
+    version = entry['version']
+
+    chat_history_file = out_dname / (instance_id + '.md')
 
     git_tempdir = checkout_repo(entry)
 
     gold_patch = entry['patch']
     rel_gold_files = files_in_patch(gold_patch)
-    gold_files = [Path(git_tempdir) / fname for fname in rel_gold_files]
+    if oracle:
+        gold_files = [Path(git_tempdir) / fname for fname in rel_gold_files]
+    else:
+        gold_files = None
 
     model = Model(model)
     io = InputOutput(
@@ -135,7 +152,8 @@ def doit(model, entry, chat_history_file):
         chat_history_file=chat_history_file,
         input_history_file="/dev/null",
     )
-    kwargs = dict(
+
+    coder = Coder.create(
         main_model=model,
         io=io,
         git_dname=git_tempdir,
@@ -143,19 +161,15 @@ def doit(model, entry, chat_history_file):
         stream=False,
         auto_commits=False,
         #verbose=True,
+        fnames = gold_files,
     )
-    if oracle:
-        kwargs['fnames'] = gold_files
-
-    problem = entry["problem_statement"]
-    print(problem)
-
-    coder = Coder.create(**kwargs)
 
     coder.show_announcements()
     coder.max_apply_update_errors = 2
+    #messages = coder.format_messages()
+    #utils.show_messages(messages)
 
-    if False:
+    if just_check_repo_map:
         mentioned_files = coder.get_file_mentions(problem)
         mentioned_idents = coder.get_ident_mentions(problem)
         dump(mentioned_files)
@@ -173,83 +187,77 @@ def doit(model, entry, chat_history_file):
         dump(gold_file)
         map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
         dump(map_has_gold_file)
-        return dict(initial_map_has_gold_file=map_has_gold_file)
+        res = dict(initial_map_has_gold_file=map_has_gold_file)
+    else:
 
-    #messages = coder.format_messages()
-    #utils.show_messages(messages)
+        dump(rel_gold_files)
+        coder.run(problem)
+        added_files = coder.get_inchat_relative_files()
+        dump(rel_gold_files)
+        dump(added_files)
+        dump(instance_id)
 
-    problem_prefix = """Don't do any coding yet!
-First, just tell me which files are the most likely to **need changes** to solve this?
-Only include the 1-2 file or files that are most likely to actually need to be edited.
-Don't include files that might contain relevant context, just files that will need to be changed.
-
-Don't suggest test files or doc files, just the source code that needs to be changed.
-
-
-"""
-
-    #if not oracle:
-    #    problem = problem_prefix + problem
-
-    dump(rel_gold_files)
-
-    coder.run(problem)
-
-    added_files = coder.get_inchat_relative_files()
-    dump(rel_gold_files)
-    dump(added_files)
-    dump(instance_id)
-
-    # Get the diff between the current state and the original commit
-    commit = entry['base_commit']
-    cmd = f"git -C {git_tempdir} diff {commit}"
-    diff_output = subprocess.check_output(cmd.split()).decode()
-
-    if not diff_output:
-        coder.run("Please try and fix the issue I provided! Let me know if you need to edit a different file.")
+        # Get the diff between the current state and the original commit
+        commit = entry['base_commit']
+        cmd = f"git -C {git_tempdir} diff {commit}"
         diff_output = subprocess.check_output(cmd.split()).decode()
 
-    print(f"\nDiff between current state and commit {commit}:")
-    print(diff_output)
+        if not diff_output:
+            coder.run("Please try and fix the issue I provided! Let me know if you need to edit a different file.")
+            diff_output = subprocess.check_output(cmd.split()).decode()
 
-    res = dict(
-        model_patch=diff_output,
-        cost=coder.total_cost,
-        added_files=added_files,
-        gold_files=rel_gold_files,
-        edited_files=files_in_patch(diff_output),
-    )
-    return res
+        print(f"\nDiff between current state and commit {commit}:")
+        print(diff_output)
+
+        res = dict(
+            model_patch=diff_output,
+            cost=coder.total_cost,
+            added_files=added_files,
+            gold_files=rel_gold_files,
+            edited_files=files_in_patch(diff_output),
+        )
+
+    res.update(dict(
+        instance_id=instance_id,
+        model_name_or_path=out_dname.name,
+    ))
+
+    out_fname = out_dname / (instance_id + ".json")
+    out_fname.write_text(json.dumps(res, indent=4))
 
 
 def main():
 
     dataset = get_dataset()
 
+    model = "gemini/gemini-1.5-pro-latest"
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
     #model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-    model = "openai/gpt-4o"
+    #model = "openai/gpt-4o"
 
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
 
     #prefix = "mentions-"
-    prefix = "mention-16x2-"
+    #prefix = "mention-16x2-"
+
+    prefix = "check-map-"
 
     model_slug = prefix + model.replace("/", "--")
-    out_fname = PREDS_DNAME / (model_slug + ".jsonl")
-    dump(out_fname)
+    out_dname = PREDS_DNAME / model_slug
+    if not out_dname.exists():
+        out_dname.mkdir()
 
     done_instances = set()
-    if Path(out_fname).exists():
-        for line in open(out_fname):
-            if not line.strip():
-                continue
-            rec = json.loads(line)
-            done_instances.add(rec['instance_id'])
+    for fname in out_dname.glob("*.json"):
+        text = fname.read_text()
+        if not text:
+            continue
+        rec = json.loads(fname.read_text())
+        done_instances.add(rec['instance_id'])
 
     all_instances = sys.argv[1:]
     if not all_instances:
@@ -262,31 +270,16 @@ def main():
     chat_history_dname.mkdir(exist_ok=True)
 
     for instance_id in all_instances:
-        entry = dataset[instance_id]
-
         if instance_id in done_instances:
             print('skipping', instance_id)
             continue
 
-        dump(instance_id)
-
-        repo = entry['repo']
-        version = entry['version']
-
-        if model == "gold":
-            res = dict(model_patch=entry['patch'])
-        else:
-            chat_history_file = chat_history_dname / (entry['instance_id'] + '.md')
-            res = doit(model, entry, chat_history_file)
-
-        result = dict(
-            model_name_or_path=model_slug,
-            instance_id=instance_id,
+        process_one_instance(
+            dataset[instance_id],
+            model,
+            out_dname,
         )
-        result.update(res)
 
-        with open(out_fname, "a") as fh:
-            fh.write(json.dumps(result) + "\n")
 
 if __name__ == '__main__':
     status = main()
