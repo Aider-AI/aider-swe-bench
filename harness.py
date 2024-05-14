@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import tempfile
+import re
 
 from pathlib import Path
 from collections import defaultdict
@@ -26,6 +27,13 @@ PREDS_DNAME = Path("predictions")
 
 import subprocess
 
+
+def get_idents(text):
+    # Split the string on any character that is not alphanumeric
+    # \W+ matches one or more non-word characters (equivalent to [^a-zA-Z0-9_]+)
+    words = set(re.split(r'\W+', text))
+    dump(words)
+    return words
 
 def files_in_patch(patch):
     """
@@ -154,6 +162,8 @@ def doit(model, entry, chat_history_file):
     coder.show_announcements()
     coder.max_apply_update_errors = 2
 
+    mentioned_idents = get_idents(problem)
+
     mentioned_files = coder.get_file_mentions(problem)
     dump(mentioned_files)
 
@@ -162,7 +172,8 @@ def doit(model, entry, chat_history_file):
         set(), # chat files
         set(coder.get_all_abs_files()), # other files
         mentioned_fnames = abs_mentioned_files,
-    )
+        mentioned_idents = mentioned_idents,
+    ) or ""
 
     gold_file = rel_gold_files[0]
     dump(gold_file)
@@ -231,7 +242,7 @@ def main():
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
 
-    prefix = "mentioned-map-has-gold-"
+    prefix = "mentioned-idents-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
