@@ -50,6 +50,9 @@ if total:
     percent = counts['resolved'] * 100 / total
     print(f"{percent= :.1f}%")
 
+    plus_one_percent = (counts['resolved'] + 1)* 100 / (total+1)
+    print(f"{plus_one_percent= :.1f}%")
+
 print()
 
 # NEED TO BE RUN?

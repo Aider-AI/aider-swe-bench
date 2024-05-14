@@ -139,7 +139,7 @@ def doit(model, entry, chat_history_file):
         main_model=model,
         io=io,
         git_dname=git_tempdir,
-        map_tokens = 4096,
+        map_tokens = 2048,
         stream=False,
         auto_commits=False,
         #verbose=True,
@@ -156,9 +156,10 @@ def doit(model, entry, chat_history_file):
     coder.max_apply_update_errors = 2
 
     if False:
-        mentioned_idents = coder.get_ident_mentions(problem)
         mentioned_files = coder.get_file_mentions(problem)
+        mentioned_idents = coder.get_ident_mentions(problem)
         dump(mentioned_files)
+        dump(mentioned_idents)
 
         abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
         repo_map = coder.repo_map.get_repo_map(
@@ -227,15 +228,16 @@ def main():
 
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    model = "openrouter/anthropic/claude-3-opus"
+    #model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-    #model = "openai/gpt-4o"
+    model = "openai/gpt-4o"
 
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
 
-    prefix = "mentions-"
+    #prefix = "mentions-"
+    prefix = "mention-16x2-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
