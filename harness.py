@@ -28,13 +28,6 @@ PREDS_DNAME = Path("predictions")
 import subprocess
 
 
-def get_idents(text):
-    # Split the string on any character that is not alphanumeric
-    # \W+ matches one or more non-word characters (equivalent to [^a-zA-Z0-9_]+)
-    words = set(re.split(r'\W+', text))
-    dump(words)
-    return words
-
 def files_in_patch(patch):
     """
     Extract the list of modified files from a unified diff patch string.
@@ -162,24 +155,24 @@ def doit(model, entry, chat_history_file):
     coder.show_announcements()
     coder.max_apply_update_errors = 2
 
-    mentioned_idents = get_idents(problem)
+    if False:
+        mentioned_idents = coder.get_ident_mentions(problem)
+        mentioned_files = coder.get_file_mentions(problem)
+        dump(mentioned_files)
 
-    mentioned_files = coder.get_file_mentions(problem)
-    dump(mentioned_files)
+        abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
+        repo_map = coder.repo_map.get_repo_map(
+            set(), # chat files
+            set(coder.get_all_abs_files()), # other files
+            mentioned_fnames = abs_mentioned_files,
+            mentioned_idents = mentioned_idents,
+        ) or ""
 
-    abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
-    repo_map = coder.repo_map.get_repo_map(
-        set(), # chat files
-        set(coder.get_all_abs_files()), # other files
-        mentioned_fnames = abs_mentioned_files,
-        mentioned_idents = mentioned_idents,
-    ) or ""
-
-    gold_file = rel_gold_files[0]
-    dump(gold_file)
-    map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
-    dump(map_has_gold_file)
-    return dict(initial_map_has_gold_file=map_has_gold_file)
+        gold_file = rel_gold_files[0]
+        dump(gold_file)
+        map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
+        dump(map_has_gold_file)
+        return dict(initial_map_has_gold_file=map_has_gold_file)
 
     #messages = coder.format_messages()
     #utils.show_messages(messages)
@@ -242,7 +235,7 @@ def main():
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
 
-    prefix = "mentioned-idents-"
+    prefix = "mentions-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
