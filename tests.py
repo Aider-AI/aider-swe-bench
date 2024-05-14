@@ -79,7 +79,7 @@ predictions = [json.loads(line) for line in open(pred_path)]
 
 iid = 'sphinx-doc__sphinx-8474'
 for prediction in predictions:
-    if iid and prediction['instance_id'] != iid:
-        continue
+    #if iid and prediction['instance_id'] != iid:
+    #    continue
     if prediction['model_patch']:
         test_prediction(prediction)

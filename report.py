@@ -22,19 +22,22 @@ model = data['model_name_or_path']
 swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
 log_dir = "logs"
 
-report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
+try:
+    report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
+except KeyError:
+    report = dict()
 
 #for k, v in report.items():
 #    print(f"- {k}: {len(v)}")
 
 #dump(report)
 
-all_instances = set(report['generated'])
-all_instances.update(set(report['no_generation']))
+all_instances = set(report.get('generated', []))
+all_instances.update(set(report.get('no_generation', [])))
 
 dump(len(all_instances))
 
-counts = dict( (k,len(v)) for k,v in report.items() )
+counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
 
 dump(counts)
 
@@ -43,8 +46,9 @@ dump(total)
 missing_logs = total - counts['with_logs']
 dump(missing_logs)
 
-percent = counts['resolved'] * 100 / (counts['generated'] + counts['no_generation'])
-print(f"{percent= :.1f}%")
+if total:
+    percent = counts['resolved'] * 100 / total
+    print(f"{percent= :.1f}%")
 
 print()
 
@@ -90,12 +94,13 @@ total_added_gold = 0
 gold_resolved = 0
 
 added_timeline = ''
+repomap_timeline = ''
 timeline = ''
 for data in predictions:
     gold_files = set(data.get('gold_files', []))
     added_files = set(data.get('added_files', []))
 
-    resolved = (data['instance_id'] in report['resolved'])
+    resolved = (data['instance_id'] in report.get('resolved', []))
     added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
 
     if added_files:
@@ -121,6 +126,14 @@ for data in predictions:
         timeline += '!'
         #print(data['instance_id'])
 
+    if data.get('initial_map_has_gold_file') or data.get('map_has_gold_file'):
+        repomap_timeline += 'M'
+    else:
+        repomap_timeline += '_'
+
+pct_maps_with_gold_file = len(repomap_timeline.replace('_', '')) / len(repomap_timeline) * 100
+dump(pct_maps_with_gold_file)
+
 dump(total_with_gold_attr)
 dump(total_added_gold)
 if total_with_gold_attr:
@@ -135,3 +148,4 @@ if total_with_gold_attr:
 
 print(timeline)
 print(added_timeline)
+print(repomap_timeline)

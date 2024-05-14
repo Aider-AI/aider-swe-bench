@@ -118,6 +118,7 @@ def show_problems(dataset):
 
 
 def doit(model, entry, chat_history_file):
+    instance_id = entry['instance_id']
     oracle = False
 
     git_tempdir = checkout_repo(entry)
@@ -137,9 +138,10 @@ def doit(model, entry, chat_history_file):
         main_model=model,
         io=io,
         git_dname=git_tempdir,
-        map_tokens = 2048,
+        map_tokens = 4096,
         stream=False,
         auto_commits=False,
+        #verbose=True,
     )
     if oracle:
         kwargs['fnames'] = gold_files
@@ -148,6 +150,13 @@ def doit(model, entry, chat_history_file):
 
     coder.show_announcements()
     coder.max_apply_update_errors = 2
+
+    repo_map = coder.get_repo_map()
+    gold_file = rel_gold_files[0]
+    dump(gold_file)
+    map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
+    dump(map_has_gold_file)
+    return dict(initial_map_has_gold_file=map_has_gold_file)
 
     #messages = coder.format_messages()
     #utils.show_messages(messages)
@@ -164,16 +173,19 @@ Don't suggest test files or doc files, just the source code that needs to be cha
 
     problem = entry["problem_statement"]
 
-    if not oracle:
-        problem = problem_prefix + problem
+    print(problem)
+
+    #if not oracle:
+    #    problem = problem_prefix + problem
 
     dump(rel_gold_files)
 
     coder.run(problem)
 
-    dump(rel_gold_files)
     added_files = coder.get_inchat_relative_files()
+    dump(rel_gold_files)
     dump(added_files)
+    dump(instance_id)
 
     # Get the diff between the current state and the original commit
     commit = entry['base_commit']
@@ -203,14 +215,15 @@ def main():
 
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    #model = "openrouter/anthropic/claude-3-opus"
+    model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-
-    model = "openai/gpt-4o"
+    #model = "openai/gpt-4o"
 
     #prefix = "oracle-"
-    prefix = "relaxed-add-files-"
+    #prefix = "fixed-repomap-"
+
+    prefix = "map-has-gold-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
