@@ -146,12 +146,21 @@ def doit(model, entry, chat_history_file):
     if oracle:
         kwargs['fnames'] = gold_files
 
+    problem = entry["problem_statement"]
+    print(problem)
+
     coder = Coder.create(**kwargs)
 
     coder.show_announcements()
     coder.max_apply_update_errors = 2
 
-    repo_map = coder.get_repo_map()
+    mentioned_files = coder.get_file_mentions(problem)
+    dump(mentioned_files)
+
+    abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
+    other_files = set(coder.get_all_abs_files()) - abs_mentioned_files
+    repo_map = coder.repo_map.get_repo_map(abs_mentioned_files, other_files)
+
     gold_file = rel_gold_files[0]
     dump(gold_file)
     map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
@@ -170,10 +179,6 @@ Don't suggest test files or doc files, just the source code that needs to be cha
 
 
 """
-
-    problem = entry["problem_statement"]
-
-    print(problem)
 
     #if not oracle:
     #    problem = problem_prefix + problem
@@ -223,7 +228,7 @@ def main():
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
 
-    prefix = "map-has-gold-"
+    prefix = "mentioned-map-has-gold-"
 
     model_slug = prefix + model.replace("/", "--")
     out_fname = PREDS_DNAME / (model_slug + ".jsonl")
