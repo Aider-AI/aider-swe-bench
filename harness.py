@@ -158,8 +158,11 @@ def doit(model, entry, chat_history_file):
     dump(mentioned_files)
 
     abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
-    other_files = set(coder.get_all_abs_files()) - abs_mentioned_files
-    repo_map = coder.repo_map.get_repo_map(abs_mentioned_files, other_files)
+    repo_map = coder.repo_map.get_repo_map(
+        set(), # chat files
+        set(coder.get_all_abs_files()), # other files
+        mentioned_fnames = abs_mentioned_files,
+    )
 
     gold_file = rel_gold_files[0]
     dump(gold_file)
