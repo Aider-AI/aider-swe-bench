@@ -5,30 +5,33 @@ set -e
 
 source .venv/bin/activate
 
-DIR=/Users/gauthier/Projects/swe-bench
+BASE=/Users/gauthier/Projects/swe-bench
 
-cd $DIR/SWE-bench-docker
+cd $BASE/SWE-bench-docker
 
-LOGDIR=`basename $1`
+# TODO: strip trailing / from PREDS_DIR
+PREDS_DIR=$1
+
+LOGDIR=`basename $PREDS_DIR`
 echo $LOGDIR
 
-JSONL=$DIR/${1}.jsonl
+JSONL=$BASE/${1}.jsonl
 cp /dev/null $JSONL
 echo $JSONL
 
-for file in $DIR/$1/*.json; do
+for file in `ls -1tr $BASE/$PREDS_DIR/*.json`; do
     #echo $file
     cat $file | python3 -m json.tool --no-indent >> $JSONL
 done
 
 python ./run_evaluation.py \
-       --log_dir $DIR/logs \
-       --swe_bench_tasks $DIR/princeton-nlp--SWE-bench_Lite.json \
+       --log_dir $BASE/logs \
+       --swe_bench_tasks $BASE/princeton-nlp--SWE-bench_Lite.json \
        --skip_existing \
        --predictions_path $JSONL \
        || true
 
-cd $DIR
+cd $BASE
 
 ./report.py $JSONL | tee tmp.evalreport.txt
 
