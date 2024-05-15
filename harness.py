@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 import re
+import lox
 
 from pathlib import Path
 from collections import defaultdict
@@ -118,6 +119,7 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
+@lox.thread(5)
 def process_one_instance(entry, model, out_dname):
 
     oracle = False
@@ -230,13 +232,13 @@ def main():
 
     dataset = get_dataset()
 
-    model = "gemini/gemini-1.5-pro-latest"
+    #model = "gemini/gemini-1.5-pro-latest"
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
     #model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-    #model = "openai/gpt-4o"
+    model = "openai/gpt-4o"
 
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"
@@ -244,7 +246,7 @@ def main():
     #prefix = "mentions-"
     #prefix = "mention-16x2-"
 
-    prefix = "check-map-"
+    prefix = "parallel-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
@@ -274,11 +276,12 @@ def main():
             print('skipping', instance_id)
             continue
 
-        process_one_instance(
+        process_one_instance.scatter(
             dataset[instance_id],
             model,
             out_dname,
         )
+    process_one_instance.gather()
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ for file in $DIR/$1/*.json; do
     cat $file | python3 -m json.tool --no-indent >> $JSONL
 done
 
-echo python ./run_evaluation.py \
+python ./run_evaluation.py \
        --log_dir $DIR/logs \
        --swe_bench_tasks $DIR/princeton-nlp--SWE-bench_Lite.json \
        --skip_existing \

@@ -84,6 +84,9 @@ if len(costs):
     avg_cost = sum(costs) / len(costs)
     print(f"avg_cost: ${avg_cost:.2f}/instance")
 
+    spent = sum(costs)
+    print(f"spent: ${spent:.2f}")
+
     num_instances = len(json.load(open(swe_bench_tasks)))
     expected_cost = num_instances * avg_cost
     print(f"expected_cost: ${expected_cost:.2f}")
