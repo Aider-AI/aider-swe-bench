@@ -32,6 +32,9 @@ def main():
 def doit(dataset, fname):
 
     fname = Path(fname)
+    if fname.suffix != '.md':
+        fname = fname.with_suffix('.md')
+
     text = fname.read_text()
     #if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
     #    return
@@ -42,13 +45,20 @@ def doit(dataset, fname):
     dump(fname)
     dump(instance_id)
 
+    dump(entry['problem_statement'])
+    dump(entry['patch'])
+
     messages = utils.split_chat_history_markdown(text, include_tool=True)
+    utils.show_messages(messages)
 
     tmp_dname = Path("tmp.replay")
     if tmp_dname.exists():
         shutil.rmtree(tmp_dname)
 
     repo_dname = harness.checkout_repo(entry, tmp_dname)
+    dump(repo_dname)
+    input()
+    return
 
     model = "deepseek/deepseek-chat"
     model = Model(model)

@@ -3,6 +3,7 @@
 import sys
 import json
 import asyncio
+import tempfile
 
 from pathlib import Path
 from collections import defaultdict
@@ -21,9 +22,8 @@ index 0000000..e69de29
 '''
 
 
-
-def test_prediction(prediction):
-    instance_id = prediction["instance_id"]
+def run_tests(entry, model_patch = None):
+    instance_id = entry["instance_id"]
     dump(instance_id)
 
     dataset = get_dataset()
@@ -34,52 +34,57 @@ def test_prediction(prediction):
     test_directives = get_test_directives(task)
     test_cmd = f"{test_type} {' '.join(test_directives)}"
 
-    #test_cmd = './tests/runtests.py --verbosity 3 test_utils.tests'
     dump(test_cmd)
+
+    if not model_patch:
+        model_patch = NOOP_PATCH.format(nonce="model_patch")
+
+    model_name_or_path = "testing"
 
     task_instance = {
         "repo": task["repo"],
         "version": task["version"],
         "base_commit": task["base_commit"],
-        "instance_id": prediction["instance_id"],
-        "model_name_or_path": prediction["model_name_or_path"],
-        "model_patch": NOOP_PATCH.format(nonce="model_patch"), # prediction["model_patch"],
+        "instance_id": entry["instance_id"],
+        "model_name_or_path": model_name_or_path,
+        "model_patch": model_patch,
         "test_patch": NOOP_PATCH.format(nonce="test_patch"), # task['test_patch']
         "test_directives": test_directives,
         "test_cmd": test_cmd
     }
 
     namespace = "aorwall"
-    log_dir = "/Users/gauthier/Projects/swe-bench/test-logs"
+    log_dir = tempfile.TemporaryDirectory(dir="/Users/gauthier/tmp").name
     timeout = 60
     log_suffix = ""
+
+    dump(log_dir)
 
     asyncio.run(
         run_docker_evaluation(task_instance, namespace, log_dir, timeout, log_suffix)
     )
 
-    model = prediction["model_name_or_path"]
-    log_fname = Path(log_dir) / f'{instance_id}.{model}.eval.log'
-
-    dump(log_fname)
+    log_fname = Path(log_dir) / f'{instance_id}.{model_name_or_path}.eval.log'
 
     log_text = log_fname.read_text()
     log_lines = log_text.splitlines()
     log_lines = [l for l in log_lines if l.startswith(">>>>")]
     print('\n'.join(log_lines))
 
+    return log_text
 
 
-pred_path = "predictions/oracle-openrouter--anthropic--claude-3-opus.jsonl"
-predictions = [json.loads(line) for line in open(pred_path)]
+dataset = get_dataset()
 
-#iid = "sympy__sympy-12236"
-#prediction = [p for p in predictions if p['instance_id'] == iid][0]
-#assert prediction['model_patch']
+num = 0
+num_passed = 0
 
-iid = 'sphinx-doc__sphinx-8474'
-for prediction in predictions:
-    #if iid and prediction['instance_id'] != iid:
-    #    continue
-    if prediction['model_patch']:
-        test_prediction(prediction)
+for entry in dataset.values():
+    test_text = run_tests(entry)
+    passed = '>>>>> All Tests Passed' in test_text
+
+    num += 1
+    if passed:
+        num_passed += 1
+
+    dump(num_passed/num)

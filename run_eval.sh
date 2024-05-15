@@ -9,6 +9,7 @@ BASE=/Users/gauthier/Projects/swe-bench
 
 cd $BASE/SWE-bench-docker
 
+# strip the trailing /
 PREDS_DIR=${1%/}
 
 LOGDIR=`basename $PREDS_DIR`
