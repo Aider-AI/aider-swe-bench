@@ -235,10 +235,10 @@ def main():
     #model = "gemini/gemini-1.5-pro-latest"
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    #model = "openrouter/anthropic/claude-3-opus"
+    model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-    model = "openai/gpt-4o"
+    #model = "openai/gpt-4o"
 
     #prefix = "oracle-"
     #prefix = "fixed-repomap-"

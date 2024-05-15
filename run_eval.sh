@@ -17,7 +17,7 @@ cp /dev/null $JSONL
 echo $JSONL
 
 for file in $DIR/$1/*.json; do
-    echo $file
+    #echo $file
     cat $file | python3 -m json.tool --no-indent >> $JSONL
 done
 
