@@ -119,7 +119,9 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
-@lox.thread(5)
+THREADS = 1
+
+#@lox.thread(THREADS)
 def process_one_instance(entry, model, out_dname):
 
     oracle = False
@@ -205,7 +207,15 @@ def process_one_instance(entry, model, out_dname):
         diff_output = subprocess.check_output(cmd.split()).decode()
 
         if not diff_output:
-            coder.run("Please try and fix the issue I provided! Let me know if you need to edit a different file.")
+            coder.temperature = 0.3
+            if coder.abs_fnames:
+                coder.abs_fname = []
+                msg = "Please try and fix the issue I provided by editing *different* files. Tell me which other files we should try and edit."
+            else:
+                msg = "Please suggest which of the *EXISTING* files need to be edited to fix the issue I provided!"
+
+            dump(msg)
+            coder.run(msg)
             diff_output = subprocess.check_output(cmd.split()).decode()
 
         print(f"\nDiff between current state and commit {commit}:")
@@ -235,18 +245,13 @@ def main():
     #model = "gemini/gemini-1.5-pro-latest"
     #model = "gpt-3.5-turbo"
     #model = "deepseek/deepseek-chat"
-    model = "openrouter/anthropic/claude-3-opus"
     #model = "gpt-4-1106-preview"
     #model = "gold"
-    #model = "openai/gpt-4o"
 
-    #prefix = "oracle-"
-    #prefix = "fixed-repomap-"
+    model = "openai/gpt-4o"
+    #model = "openrouter/anthropic/claude-3-opus"
 
-    #prefix = "mentions-"
-    #prefix = "mention-16x2-"
-
-    prefix = "parallel-"
+    prefix = "retry-no-patch-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
@@ -261,7 +266,10 @@ def main():
         rec = json.loads(fname.read_text())
         done_instances.add(rec['instance_id'])
 
-    all_instances = sys.argv[1:]
+    all_instances = [
+        Path(fn).with_suffix("").name
+        for fn in sys.argv[1:]
+    ]
     if not all_instances:
         all_instances = dataset.keys()
 
@@ -271,17 +279,27 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / model_slug
     chat_history_dname.mkdir(exist_ok=True)
 
+    if THREADS > 1:
+        process_one_instance_func = process_one_instance.scatter
+    else:
+        process_one_instance_func = process_one_instance
+
     for instance_id in all_instances:
         if instance_id in done_instances:
             print('skipping', instance_id)
             continue
 
-        process_one_instance.scatter(
+        process_one_instance_func(
             dataset[instance_id],
             model,
             out_dname,
         )
-    process_one_instance.gather()
+
+        print('#'*60)
+        #input()
+
+    if THREADS > 1:
+        process_one_instance.gather()
 
 
 if __name__ == '__main__':
