@@ -9,8 +9,7 @@ BASE=/Users/gauthier/Projects/swe-bench
 
 cd $BASE/SWE-bench-docker
 
-# TODO: strip trailing / from PREDS_DIR
-PREDS_DIR=$1
+PREDS_DIR=${1%/}
 
 LOGDIR=`basename $PREDS_DIR`
 echo $LOGDIR
