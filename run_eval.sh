@@ -7,7 +7,7 @@ source .venv/bin/activate
 
 BASE=/Users/gauthier/Projects/swe-bench
 
-cd $BASE/SWE-bench-docker
+#cd $BASE/SWE-bench-docker
 
 # strip the trailing /
 PREDS_DIR=${1%/}
@@ -24,14 +24,14 @@ for file in `ls -1tr $BASE/$PREDS_DIR/*.json`; do
     cat $file | python3 -m json.tool --no-indent >> $JSONL
 done
 
-python ./run_evaluation.py \
+python $BASE/SWE-bench-docker/run_evaluation.py \
        --log_dir $BASE/logs \
        --swe_bench_tasks $BASE/princeton-nlp--SWE-bench_Lite.json \
        --skip_existing \
        --predictions_path $JSONL \
        || true
 
-cd $BASE
+#cd $BASE
 
 ./report.py $JSONL | tee tmp.evalreport.txt
 

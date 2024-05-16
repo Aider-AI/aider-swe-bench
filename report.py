@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import subprocess
+import tempfile
 import json
 import time
 import os
@@ -15,19 +17,30 @@ from swebench.metrics.report import get_model_report
 from harness import get_dataset
 from tests import run_tests
 
-def main():
-    pred_path = sys.argv[1]
 
-    for line in open(pred_path):
-        break
-    data = json.loads(line)
+def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
+    base = os.getcwd()
 
-    model = data['model_name_or_path']
-    swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
-    log_dir = "logs"
+    run_evals_cmd = f'''
+python {base}/SWE-bench-docker/run_evaluation.py
+    --log_dir {base}/{log_dir}
+    --swe_bench_tasks {base}/{swe_bench_tasks}
+    --skip_existing
+    --predictions_path {predictions_jsonl}
+'''
+    run_evals_cmd = ' '.join([line.strip() for line in run_evals_cmd.split() if line.strip()])
+    subprocess.run(run_evals_cmd.split(), check=True)
+
+def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     try:
-        report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
+        report = get_model_report(
+            model_name_or_path,
+            predictions_jsonl,
+            swe_bench_tasks,
+            log_dir,
+            verbose=True,
+        )
     except KeyError:
         report = dict()
 
@@ -35,6 +48,27 @@ def main():
     #    print(f"- {k}: {len(v)}")
 
     #dump(report)
+
+    return report
+
+
+def main():
+    prediction_paths = sys.argv[1:]
+
+    predictions = []
+    predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
+    with open(predictions_jsonl, "w") as fh:
+        for fname in prediction_paths:
+            pred = json.loads(Path(fname).read_text())
+            predictions.append(pred)
+            fh.write(json.dumps(pred) + '\n')
+
+    model_name_or_path = predictions[0]['model_name_or_path']
+    swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
+    log_dir = "logs"
+
+    run_evals(swe_bench_tasks, log_dir, predictions_jsonl)
+    report = get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path)
 
     all_instances = set(report.get('generated', []))
     all_instances.update(set(report.get('no_generation', [])))
@@ -70,9 +104,6 @@ def main():
         percent_of_should = counts['resolved'] * 100 / should_count
         print(f"{percent_of_should=:.1f}")
 
-
-    # load predictions
-    predictions = [json.loads(line) for line in open(pred_path)]
 
     # COSTS
     costs = []
@@ -160,8 +191,9 @@ def main():
     print(added_timeline)
     print(repomap_timeline)
 
+    #stats_on_tests_before_and_after(report, predictions)
 
-def stats_on_tests_before_and_after():
+def stats_on_tests_before_and_after(report, predictions):
 
     num = 0
     num_before_pass = 0
@@ -172,11 +204,12 @@ def stats_on_tests_before_and_after():
 
     random.shuffle(predictions)
 
+    outcomes = defaultdict(int)
     for pred in predictions:
         instance_id = pred['instance_id']
 
-        if instance_id not in has_patch_not_resolved:
-            continue
+        #if instance_id not in has_patch_not_resolved:
+        #    continue
 
         num += 1
 
@@ -187,7 +220,11 @@ def stats_on_tests_before_and_after():
 
         after_passed, _ = run_tests(entry, model_patch = pred['model_patch'])
 
-        dump(before_passed, after_passed)
+        resolved = (instance_id in report['resolved'])
+        dump(before_passed, after_passed, resolved)
+        outcome = (before_passed, after_passed, resolved)
+        outcomes[outcome] += 1
+        dump(sorted(outcomes.items()))
 
         if before_passed:
             num_before_pass += 1
