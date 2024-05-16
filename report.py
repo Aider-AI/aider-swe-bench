@@ -51,7 +51,7 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     return report
 
-def update_pred_json(predictions, report):
+def update_pred_json(predictions, report, pred_fnames):
     all_instances = set(report.get('generated', []))
     all_instances.update(set(report.get('no_generation', [])))
     dump(len(all_instances))
@@ -64,18 +64,27 @@ def update_pred_json(predictions, report):
         if instance_id not in all_instances:
             continue
         pred['resolved'] = (instance_id in report['resolved'])
-        Path(pred['json_fname']).write_text(json.dumps(pred, indent=4))
+        pred_fnames[instance_id].write_text(json.dumps(pred, indent=4))
 
 
 def main():
-    prediction_paths = sys.argv[1:]
+    prediction_paths = []
+    for path in sys.argv[1:]:
+        path = Path(path)
+        if path.is_file():
+            prediction_paths.append(path)
+        elif path.is_dir():
+            prediction_paths += list(path.glob('*.json'))
+        else:
+            assert False, path
 
+    pred_fnames = dict()
     predictions = []
     predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
     with open(predictions_jsonl, "w") as fh:
         for fname in prediction_paths:
-            pred = json.loads(Path(fname).read_text())
-            pred['json_fname'] = fname
+            pred = json.loads(fname.read_text())
+            pred_fnames[pred['instance_id']] = fname
             predictions.append(pred)
             fh.write(json.dumps(pred) + '\n')
 
@@ -90,7 +99,7 @@ def main():
     report = get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path)
 
     if any_need_evals:
-        update_pred_json(predictions, report)
+        update_pred_json(predictions, report, pred_fnames)
 
     counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
     dump(counts)
