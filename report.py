@@ -51,6 +51,21 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     return report
 
+def update_pred_json(predictions, report):
+    all_instances = set(report.get('generated', []))
+    all_instances.update(set(report.get('no_generation', [])))
+    dump(len(all_instances))
+
+    for pred in predictions:
+        if 'resolved' in pred:
+            continue
+
+        instance_id = pred['instance_id']
+        if instance_id not in all_instances:
+            continue
+        pred['resolved'] = (instance_id in report['resolved'])
+        Path(pred['json_fname']).write_text(json.dumps(pred, indent=4))
+
 
 def main():
     prediction_paths = sys.argv[1:]
@@ -60,6 +75,7 @@ def main():
     with open(predictions_jsonl, "w") as fh:
         for fname in prediction_paths:
             pred = json.loads(Path(fname).read_text())
+            pred['json_fname'] = fname
             predictions.append(pred)
             fh.write(json.dumps(pred) + '\n')
 
@@ -67,16 +83,16 @@ def main():
     swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
     log_dir = "logs"
 
-    run_evals(swe_bench_tasks, log_dir, predictions_jsonl)
+    any_need_evals = any('resolved' not in pred for pred in predictions)
+    if any_need_evals:
+        run_evals(swe_bench_tasks, log_dir, predictions_jsonl)
+
     report = get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path)
 
-    all_instances = set(report.get('generated', []))
-    all_instances.update(set(report.get('no_generation', [])))
-
-    dump(len(all_instances))
+    if any_need_evals:
+        update_pred_json(predictions, report)
 
     counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
-
     dump(counts)
 
     total = counts['generated'] + counts['no_generation']
