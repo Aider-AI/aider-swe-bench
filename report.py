@@ -51,25 +51,26 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     return report
 
-def update_pred_json(predictions, report, pred_fnames):
+def update_pred_json(predictions, report):
     all_instances = set(report.get('generated', []))
     all_instances.update(set(report.get('no_generation', [])))
     dump(len(all_instances))
 
-    for pred in predictions:
+    for instance_id,pred in predictions.items():
         if 'resolved' in pred:
             continue
 
-        instance_id = pred['instance_id']
-        if instance_id not in all_instances:
-            continue
+        assert instance_id in all_instances, instance_id
+
         pred['resolved'] = (instance_id in report['resolved'])
-        pred_fnames[instance_id].write_text(json.dumps(pred, indent=4))
+        save = dict(pred)
+        del save['json_fname']
+        Path(pred['json_fname']).write_text(json.dumps(save, indent=4))
 
 
-def main():
+def load_predictions(paths):
     prediction_paths = []
-    for path in sys.argv[1:]:
+    for path in paths:
         path = Path(path)
         if path.is_file():
             prediction_paths.append(path)
@@ -78,28 +79,40 @@ def main():
         else:
             assert False, path
 
-    pred_fnames = dict()
-    predictions = []
+    predictions = dict()
     predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
     with open(predictions_jsonl, "w") as fh:
         for fname in prediction_paths:
             pred = json.loads(fname.read_text())
-            pred_fnames[pred['instance_id']] = fname
-            predictions.append(pred)
+            inst = pred['instance_id']
+            pred['json_fname'] = str(fname)
+            predictions[inst] = pred
             fh.write(json.dumps(pred) + '\n')
 
-    model_name_or_path = predictions[0]['model_name_or_path']
+    return predictions
+
+def main():
+
+    predictions = load_predictions(sys.argv[1:])
+
+    predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
+    with open(predictions_jsonl, "w") as fh:
+        for inst,pred in predictions.items():
+            fh.write(json.dumps(pred) + '\n')
+
+    # use the last pred to get model_name_or_path
+    model_name_or_path = pred['model_name_or_path']
     swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
     log_dir = "logs"
 
-    any_need_evals = any('resolved' not in pred for pred in predictions)
+    any_need_evals = any('resolved' not in pred for pred in predictions.values())
     if any_need_evals:
         run_evals(swe_bench_tasks, log_dir, predictions_jsonl)
 
     report = get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path)
 
     if any_need_evals:
-        update_pred_json(predictions, report, pred_fnames)
+        update_pred_json(predictions, report)
 
     counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
     dump(counts)
@@ -132,7 +145,7 @@ def main():
 
     # COSTS
     costs = []
-    for data in predictions:
+    for data in predictions.values():
         cost = data.get('cost')
         if cost is not None and cost > 0:
             costs.append(cost)
@@ -162,11 +175,11 @@ def main():
     added_timeline = ''
     repomap_timeline = ''
     timeline = ''
-    for data in predictions:
+    for instance_id, data in predictions.items():
         gold_files = set(data.get('gold_files', []))
         added_files = set(data.get('added_files', []))
 
-        resolved = (data['instance_id'] in report.get('resolved', []))
+        resolved = data['resolved']
         added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
 
         if added_files:
@@ -216,7 +229,7 @@ def main():
     print(added_timeline)
     print(repomap_timeline)
 
-    #stats_on_tests_before_and_after(report, predictions)
+    #stats_on_tests_before_and_after(report, predictions.values())
 
 def stats_on_tests_before_and_after(report, predictions):
 
