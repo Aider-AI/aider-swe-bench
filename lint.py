@@ -21,6 +21,15 @@ from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 from harness import get_dataset, files_in_patch, checkout_repo
 from report import load_predictions
 
+
+def lint(fname):
+    try:
+        py_compile.compile(fname, doraise=True)
+        return
+    except py_compile.PyCompileError as err:
+        return err.msg
+
+
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
 
@@ -46,9 +55,10 @@ for inst,pred in items:
     fname = Path(git_tempdir) / fname
 
     num += 1
-    try:
-        py_compile.compile(fname, doraise=True)
-    except py_compile.PyCompileError:
+
+    errors = lint(fname)
+    if errors:
+        dump(errors)
         before_errors += 1
 
     patch_fname = tempfile.NamedTemporaryFile().name
@@ -57,13 +67,10 @@ for inst,pred in items:
     cmd = f"git -C {git_tempdir} apply {patch_fname}"
     subprocess.run(cmd.split(), check=True)
 
-    try:
-        py_compile.compile(fname, doraise=True)
-    except py_compile.PyCompileError as err:
-        dump(err.msg)
-        traceback.print_exc()
+    errors = lint(fname)
+    if errors:
+        dump(errors)
         after_errors += 1
-        input()
 
     #commit = entry['base_commit']
     #diff_cmd = f"git -C {git_tempdir} diff {commit}"
