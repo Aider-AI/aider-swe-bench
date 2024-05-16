@@ -31,8 +31,17 @@ def lint_pycompile(fname):
         return err.msg
 
 def lint(fname):
-    # TODO: use flake8 and a CustomFormatter to return a nicely formatted
-    # text report of linting errors. include the code with each error and surrounding lines.
+    style_guide = flake8.get_style_guide()
+    report = style_guide.check_files([str(fname)])
+    
+    if report.total_errors == 0:
+        return None
+    
+    errors = []
+    for error in report.get_statistics('E'):
+        errors.append(error)
+    
+    return "\n".join(errors)
 
 
 dnames = sys.argv[1:]
