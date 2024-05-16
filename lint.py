@@ -31,7 +31,22 @@ def lint_pycompile(fname):
         return err.msg
 
 def lint_flake8(fname):
-    # TODO: use flake8 to lint, return the line of code with each error and surrounding lines
+    style_guide = flake8.get_style_guide()
+    report = style_guide.check_files([fname])
+    
+    errors = []
+    for error in report.get_statistics('E'):
+        line_number = int(error.split(':')[1])
+        with open(fname, 'r') as file:
+            lines = file.readlines()
+            error_line = lines[line_number - 1].strip()
+            surrounding_lines = lines[max(0, line_number - 3):min(len(lines), line_number + 2)]
+            errors.append({
+                'line_number': line_number,
+                'error_line': error_line,
+                'surrounding_lines': [line.strip() for line in surrounding_lines]
+            })
+    return errors
 
 foo()
 
