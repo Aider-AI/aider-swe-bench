@@ -21,14 +21,19 @@ from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 from harness import get_dataset, files_in_patch, checkout_repo
 from report import load_predictions
 
+from flake8.api import legacy as flake8
 
-def lint(fname):
+def lint_pycompile(fname):
     try:
         py_compile.compile(fname, doraise=True)
         return
     except py_compile.PyCompileError as err:
         return err.msg
 
+def lint_flake8(fname):
+    # TODO: use flake8 to lint, return the line of code with each error and surrounding lines
+
+foo()
 
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
