@@ -79,8 +79,9 @@ def load_predictions(paths):
         else:
             assert False, path
 
+    # todo: sort prediction_paths by mtime, oldest first
+
     predictions = dict()
-    predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
     with open(predictions_jsonl, "w") as fh:
         for fname in prediction_paths:
             pred = json.loads(fname.read_text())
