@@ -30,23 +30,10 @@ def lint_pycompile(fname):
     except py_compile.PyCompileError as err:
         return err.msg
 
-def lint_flake8(fname):
-    style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([fname])
-    
-    errors = []
-    for error in report.get_statistics('E'):
-        line_number = int(error.split(':')[1])
-        with open(fname, 'r') as file:
-            lines = file.readlines()
-            error_line = lines[line_number - 1].strip()
-            surrounding_lines = lines[max(0, line_number - 3):min(len(lines), line_number + 2)]
-            formatted_error = f"Error on line {line_number}:\n"
-            formatted_error += "\n".join([f"{i+1}: {line.strip()}" for i, line in enumerate(surrounding_lines)])
-            errors.append(formatted_error)
-    return "\n\n".join(errors)
+def lint(fname):
+    # TODO: use flake8 and a CustomFormatter to return a nicely formatted
+    # text report of linting errors. include the code with each error and surrounding lines.
 
-foo()
 
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
