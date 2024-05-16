@@ -79,7 +79,7 @@ def load_predictions(paths):
         else:
             assert False, path
 
-    # todo: sort prediction_paths by mtime, oldest first
+    prediction_paths.sort(key=lambda p: p.stat().st_mtime)
 
     predictions = dict()
     with open(predictions_jsonl, "w") as fh:
