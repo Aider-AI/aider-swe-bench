@@ -41,12 +41,10 @@ def lint_flake8(fname):
             lines = file.readlines()
             error_line = lines[line_number - 1].strip()
             surrounding_lines = lines[max(0, line_number - 3):min(len(lines), line_number + 2)]
-            errors.append({
-                'line_number': line_number,
-                'error_line': error_line,
-                'surrounding_lines': [line.strip() for line in surrounding_lines]
-            })
-    return errors
+            formatted_error = f"Error on line {line_number}:\n"
+            formatted_error += "\n".join([f"{i+1}: {line.strip()}" for i, line in enumerate(surrounding_lines)])
+            errors.append(formatted_error)
+    return "\n\n".join(errors)
 
 foo()
 
