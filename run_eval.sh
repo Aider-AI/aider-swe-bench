@@ -15,7 +15,7 @@ PREDS_DIR=${1%/}
 LOGDIR=`basename $PREDS_DIR`
 echo $LOGDIR
 
-JSONL=$BASE/${1}.jsonl
+JSONL=$BASE/${PREDS_DIR}.jsonl
 cp /dev/null $JSONL
 echo $JSONL
 

@@ -4,6 +4,7 @@ import json
 import time
 import os
 import sys
+import random
 
 from pathlib import Path
 from collections import defaultdict
@@ -11,147 +12,200 @@ from collections import defaultdict
 from dump import dump
 
 from swebench.metrics.report import get_model_report
+from harness import get_dataset
+from tests import run_tests
 
-pred_path = sys.argv[1]
+def main():
+    pred_path = sys.argv[1]
 
-for line in open(pred_path):
-    break
-data = json.loads(line)
+    for line in open(pred_path):
+        break
+    data = json.loads(line)
 
-model = data['model_name_or_path']
-swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
-log_dir = "logs"
+    model = data['model_name_or_path']
+    swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
+    log_dir = "logs"
 
-try:
-    report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
-except KeyError:
-    report = dict()
+    try:
+        report = get_model_report(model, pred_path, swe_bench_tasks, log_dir, verbose=True)
+    except KeyError:
+        report = dict()
 
-#for k, v in report.items():
-#    print(f"- {k}: {len(v)}")
+    #for k, v in report.items():
+    #    print(f"- {k}: {len(v)}")
 
-#dump(report)
+    #dump(report)
 
-all_instances = set(report.get('generated', []))
-all_instances.update(set(report.get('no_generation', [])))
+    all_instances = set(report.get('generated', []))
+    all_instances.update(set(report.get('no_generation', [])))
 
-dump(len(all_instances))
+    dump(len(all_instances))
 
-counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
+    counts = defaultdict(int, [(k,len(v)) for k,v in report.items()])
 
-dump(counts)
+    dump(counts)
 
-total = counts['generated'] + counts['no_generation']
-dump(total)
-missing_logs = total - counts['with_logs']
-dump(missing_logs)
+    total = counts['generated'] + counts['no_generation']
+    dump(total)
+    missing_logs = total - counts['with_logs']
+    dump(missing_logs)
 
-if total:
-    percent = counts['resolved'] * 100 / total
-    print(f"{percent= :.1f}%")
+    if total:
+        percent = counts['resolved'] * 100 / total
+        print(f"{percent= :.1f}%")
 
-    plus_one_percent = (counts['resolved'] + 1)* 100 / (total+1)
-    print(f"{plus_one_percent= :.1f}%")
-
-print()
-
-# NEED TO BE RUN?
-need_to_be_run = missing_logs - counts['no_generation']
-if need_to_be_run:
-    dump(need_to_be_run)
-
-    should_count = total - need_to_be_run
-    dump(should_count)
-
-    percent_of_should = counts['resolved'] * 100 / should_count
-    print(f"{percent_of_should=:.1f}")
-
-
-# load predictions
-predictions = [json.loads(line) for line in open(pred_path)]
-
-# COSTS
-costs = []
-for data in predictions:
-    cost = data.get('cost')
-    if cost is not None and cost > 0:
-        costs.append(cost)
-
-if len(costs):
-    recent = costs[-5:]
-    recent = [f"{c:.2f}" for c in recent]
-    print("recent costs:", ', '.join(recent))
-    avg_cost = sum(costs) / len(costs)
-    print(f"avg_cost: ${avg_cost:.2f}/instance")
-
-    spent = sum(costs)
-    print(f"spent: ${spent:.2f}")
-
-    num_instances = len(json.load(open(swe_bench_tasks)))
-    expected_cost = num_instances * avg_cost
-    print(f"expected_cost: ${expected_cost:.2f}")
+        plus_one_percent = (counts['resolved'] + 1)* 100 / (total+1)
+        print(f"{plus_one_percent= :.1f}%")
 
     print()
 
-# added gold files?
+    # NEED TO BE RUN?
+    need_to_be_run = missing_logs - counts['no_generation']
+    if need_to_be_run:
+        dump(need_to_be_run)
 
-total_with_gold_attr = 0
-total_added_gold = 0
-gold_resolved = 0
+        should_count = total - need_to_be_run
+        dump(should_count)
 
-added_timeline = ''
-repomap_timeline = ''
-timeline = ''
-for data in predictions:
-    gold_files = set(data.get('gold_files', []))
-    added_files = set(data.get('added_files', []))
-
-    resolved = (data['instance_id'] in report.get('resolved', []))
-    added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
-
-    if added_files:
-        added_timeline += str(len(added_files))
-    else:
-        added_timeline += '_'
-
-    if gold_files:
-        total_with_gold_attr += 1
-    if added_gold:
-        total_added_gold += 1
-
-    if not gold_files and not resolved:
-        timeline += '.'
-    elif added_gold and resolved:
-        timeline += 'R'
-        gold_resolved += 1
-    elif added_gold and not resolved:
-        timeline += 'g'
-    elif not added_gold and not resolved:
-        timeline += '_'
-    elif not added_gold and resolved:
-        timeline += '!'
-        #print(data['instance_id'])
-
-    if data.get('initial_map_has_gold_file') or data.get('map_has_gold_file'):
-        repomap_timeline += 'M'
-    else:
-        repomap_timeline += '_'
-
-pct_maps_with_gold_file = len(repomap_timeline.replace('_', '')) / len(repomap_timeline) * 100
-dump(pct_maps_with_gold_file)
-
-dump(total_with_gold_attr)
-dump(total_added_gold)
-if total_with_gold_attr:
-    pct_added = total_added_gold / total_with_gold_attr * 100
-    print(f"pct_added_gold: {pct_added:.1f}%")
+        percent_of_should = counts['resolved'] * 100 / should_count
+        print(f"{percent_of_should=:.1f}")
 
 
-    pct_added_gold_resolved = gold_resolved / total_added_gold * 100
-    print(f"pct_added_gold_resolved: {pct_added_gold_resolved:.1f}%")
+    # load predictions
+    predictions = [json.loads(line) for line in open(pred_path)]
 
-    print()
+    # COSTS
+    costs = []
+    for data in predictions:
+        cost = data.get('cost')
+        if cost is not None and cost > 0:
+            costs.append(cost)
 
-print(timeline)
-print(added_timeline)
-print(repomap_timeline)
+    if len(costs):
+        recent = costs[-5:]
+        recent = [f"{c:.2f}" for c in recent]
+        print("recent costs:", ', '.join(recent))
+        avg_cost = sum(costs) / len(costs)
+        print(f"avg_cost: ${avg_cost:.2f}/instance")
+
+        spent = sum(costs)
+        print(f"spent: ${spent:.2f}")
+
+        num_instances = len(json.load(open(swe_bench_tasks)))
+        expected_cost = num_instances * avg_cost
+        print(f"expected_cost: ${expected_cost:.2f}")
+
+        print()
+
+    # added gold files?
+
+    total_with_gold_attr = 0
+    total_added_gold = 0
+    gold_resolved = 0
+
+    added_timeline = ''
+    repomap_timeline = ''
+    timeline = ''
+    for data in predictions:
+        gold_files = set(data.get('gold_files', []))
+        added_files = set(data.get('added_files', []))
+
+        resolved = (data['instance_id'] in report.get('resolved', []))
+        added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
+
+        if added_files:
+            added_timeline += str(len(added_files))
+        else:
+            added_timeline += '_'
+
+        if gold_files:
+            total_with_gold_attr += 1
+        if added_gold:
+            total_added_gold += 1
+
+        if not gold_files and not resolved:
+            timeline += '.'
+        elif added_gold and resolved:
+            timeline += 'R'
+            gold_resolved += 1
+        elif added_gold and not resolved:
+            timeline += 'g'
+        elif not added_gold and not resolved:
+            timeline += '_'
+        elif not added_gold and resolved:
+            timeline += '!'
+            #print(data['instance_id'])
+
+        if data.get('initial_map_has_gold_file') or data.get('map_has_gold_file'):
+            repomap_timeline += 'M'
+        else:
+            repomap_timeline += '_'
+
+    pct_maps_with_gold_file = len(repomap_timeline.replace('_', '')) / len(repomap_timeline) * 100
+    dump(pct_maps_with_gold_file)
+
+    dump(total_with_gold_attr)
+    dump(total_added_gold)
+    if total_with_gold_attr:
+        pct_added = total_added_gold / total_with_gold_attr * 100
+        print(f"pct_added_gold: {pct_added:.1f}%")
+
+
+        pct_added_gold_resolved = gold_resolved / total_added_gold * 100
+        print(f"pct_added_gold_resolved: {pct_added_gold_resolved:.1f}%")
+
+        print()
+
+    print(timeline)
+    print(added_timeline)
+    print(repomap_timeline)
+
+
+def stats_on_tests_before_and_after():
+
+    num = 0
+    num_before_pass = 0
+    num_pass_to_fail = 0
+
+    has_patch_not_resolved = set(report['generated']) - set(report['resolved'])
+    dataset = get_dataset()
+
+    random.shuffle(predictions)
+
+    for pred in predictions:
+        instance_id = pred['instance_id']
+
+        if instance_id not in has_patch_not_resolved:
+            continue
+
+        num += 1
+
+        entry = dataset[instance_id]
+        before_passed, _ = run_tests(entry)
+        if not before_passed:
+            continue
+
+        after_passed, _ = run_tests(entry, model_patch = pred['model_patch'])
+
+        dump(before_passed, after_passed)
+
+        if before_passed:
+            num_before_pass += 1
+        if before_passed and not after_passed:
+            num_pass_to_fail += 1
+
+        print()
+        dump(num)
+        dump(num_before_pass)
+        dump(num_pass_to_fail)
+
+        pct_before_pass = num_before_pass / num * 100
+        dump(pct_before_pass)
+        pct_pass_to_fail = num_pass_to_fail/num_before_pass*100
+        dump(pct_pass_to_fail)
+
+        print()
+
+if __name__ == '__main__':
+    status = main()
+    sys.exit(status)

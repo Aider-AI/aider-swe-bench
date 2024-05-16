@@ -21,6 +21,7 @@ from aider.coders import Coder
 from aider.models import Model
 from aider import utils
 
+from tests import run_tests
 
 REPOS_DNAME = Path('repos')
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -119,9 +120,9 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
-THREADS = 1
+THREADS = 10
 
-#@lox.thread(THREADS)
+@lox.thread(THREADS)
 def process_one_instance(entry, model, out_dname):
 
     oracle = False
@@ -203,20 +204,33 @@ def process_one_instance(entry, model, out_dname):
 
         # Get the diff between the current state and the original commit
         commit = entry['base_commit']
-        cmd = f"git -C {git_tempdir} diff {commit}"
-        diff_output = subprocess.check_output(cmd.split()).decode()
+        diff_cmd = f"git -C {git_tempdir} diff {commit}"
+
+        diff_output = subprocess.check_output(diff_cmd.split()).decode()
+        dump(diff_output)
+
+        tried_again_from_tests = False
+        tried_again_no_diff = False
+
+        if diff_output:
+            passed_before,_output = run_tests(entry)
+            dump(passed_before)
+            if passed_before:
+                passed_with_patch,_output = run_tests(entry, model_patch=diff_output)
+                dump(passed_with_patch)
+                if not passed_with_patch:
+                    diff_output = None # try again, we broke some existing tests
+                    tried_again_from_tests = True
+        else:
+            tried_again_no_diff = True
 
         if not diff_output:
+            coder.commands.cmd_clear()
+            coder.commands.cmd_drop()
             coder.temperature = 0.3
-            if coder.abs_fnames:
-                coder.abs_fname = []
-                msg = "Please try and fix the issue I provided by editing *different* files. Tell me which other files we should try and edit."
-            else:
-                msg = "Please suggest which of the *EXISTING* files need to be edited to fix the issue I provided!"
 
-            dump(msg)
-            coder.run(msg)
-            diff_output = subprocess.check_output(cmd.split()).decode()
+            coder.run(problem)
+            diff_output = subprocess.check_output(diff_cmd.split()).decode()
 
         print(f"\nDiff between current state and commit {commit}:")
         print(diff_output)
@@ -227,6 +241,8 @@ def process_one_instance(entry, model, out_dname):
             added_files=added_files,
             gold_files=rel_gold_files,
             edited_files=files_in_patch(diff_output),
+            tried_again_from_tests=tried_again_from_tests,
+            tried_again_no_diff = tried_again_no_diff,
         )
 
     res.update(dict(
@@ -244,14 +260,14 @@ def main():
 
     #model = "gemini/gemini-1.5-pro-latest"
     #model = "gpt-3.5-turbo"
-    #model = "deepseek/deepseek-chat"
     #model = "gpt-4-1106-preview"
     #model = "gold"
 
-    model = "openai/gpt-4o"
+    #model = "deepseek/deepseek-chat"
+    model = "gpt-4o"
     #model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "retry-no-patch-"
+    prefix = "tests-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
