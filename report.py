@@ -54,7 +54,6 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 def update_pred_json(predictions, report):
     all_instances = set(report.get('generated', []))
     all_instances.update(set(report.get('no_generation', [])))
-    dump(len(all_instances))
 
     for instance_id,pred in predictions.items():
         if 'resolved' in pred:
@@ -82,13 +81,11 @@ def load_predictions(paths):
     prediction_paths.sort(key=lambda p: p.stat().st_mtime)
 
     predictions = dict()
-    with open(predictions_jsonl, "w") as fh:
-        for fname in prediction_paths:
-            pred = json.loads(fname.read_text())
-            inst = pred['instance_id']
-            pred['json_fname'] = str(fname)
-            predictions[inst] = pred
-            fh.write(json.dumps(pred) + '\n')
+    for fname in prediction_paths:
+        pred = json.loads(fname.read_text())
+        inst = pred['instance_id']
+        pred['json_fname'] = str(fname)
+        predictions[inst] = pred
 
     return predictions
 

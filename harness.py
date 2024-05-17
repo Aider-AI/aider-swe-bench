@@ -29,6 +29,18 @@ PREDS_DNAME = Path("predictions")
 
 import subprocess
 
+def lint(fname):
+    fatal = 'E9,F821,F823,F831,F406,F407,F701,F702,F704,F706'
+    cmd = f"flake8 --select={fatal} --show-source --exit-zero {fname}"
+    errors = subprocess.check_output(cmd.split()).decode()
+    return errors
+
+
+def diff_versus_commit(git_dname, commit):
+    diff_cmd = f"git -C {git_dname} diff {commit}"
+    diff_output = subprocess.check_output(diff_cmd.split()).decode()
+    return diff_output
+
 
 def files_in_patch(patch):
     """
@@ -120,35 +132,11 @@ def show_problems(dataset):
         print(f"{inst}: {problem}")
 
 
-THREADS = 10
 
-@lox.thread(THREADS)
-def process_one_instance(entry, model, out_dname):
+def get_coder(model, git_dname, chat_history_file, oracle_files=None):
 
-    oracle = False
-    just_check_repo_map = False
-
-    instance_id = entry['instance_id']
-
-    print("="*60)
-    dump(instance_id)
-    print("="*60)
-    problem = entry["problem_statement"]
-    print(problem)
-
-    repo = entry['repo']
-    version = entry['version']
-
-    chat_history_file = out_dname / (instance_id + '.md')
-
-    git_tempdir = checkout_repo(entry)
-
-    gold_patch = entry['patch']
-    rel_gold_files = files_in_patch(gold_patch)
-    if oracle:
-        gold_files = [Path(git_tempdir) / fname for fname in rel_gold_files]
-    else:
-        gold_files = None
+    if oracle_files:
+        oracle_files = [Path(git_tempdir) / fname for fname in oracle_files]
 
     model = Model(model)
     io = InputOutput(
@@ -161,97 +149,125 @@ def process_one_instance(entry, model, out_dname):
     coder = Coder.create(
         main_model=model,
         io=io,
-        git_dname=git_tempdir,
+        git_dname=git_dname,
         map_tokens = 2048,
         stream=False,
         auto_commits=False,
         #verbose=True,
-        fnames = gold_files,
+        fnames = oracle_files,
     )
 
     coder.show_announcements()
     coder.max_apply_update_errors = 2
+
     #messages = coder.format_messages()
     #utils.show_messages(messages)
+    return coder
 
-    if just_check_repo_map:
-        mentioned_files = coder.get_file_mentions(problem)
-        mentioned_idents = coder.get_ident_mentions(problem)
-        dump(mentioned_files)
-        dump(mentioned_idents)
+THREADS = 10
 
-        abs_mentioned_files = set(coder.abs_root_path(f) for f in mentioned_files)
-        repo_map = coder.repo_map.get_repo_map(
-            set(), # chat files
-            set(coder.get_all_abs_files()), # other files
-            mentioned_fnames = abs_mentioned_files,
-            mentioned_idents = mentioned_idents,
-        ) or ""
+@lox.thread(THREADS)
+def process_one_instance(entry, model, out_dname):
 
-        gold_file = rel_gold_files[0]
-        dump(gold_file)
-        map_has_gold_file = any(line.startswith(gold_file) for line in repo_map.splitlines())
-        dump(map_has_gold_file)
-        res = dict(initial_map_has_gold_file=map_has_gold_file)
+    oracle = False
+
+    instance_id = entry['instance_id']
+
+    print("="*60)
+    dump(instance_id)
+    print("="*60)
+    problem = entry["problem_statement"]
+    print(problem)
+
+    gold_files = files_in_patch(entry['patch'])
+    if oracle:
+        oracle_files = gold_files
     else:
+        oracle_files = None
 
-        dump(rel_gold_files)
+    chat_history_file = out_dname / (instance_id + '.md')
+
+    passed_tests_before = None
+    results = []
+    tries = 0
+    temp = 0.
+    cost = 0
+    while tries < 3:
+
+        tries += 1
+        dump(tries, temp)
+
+        git_tempdir = checkout_repo(entry)
+        coder = get_coder(model, git_tempdir, chat_history_file, oracle_files)
+
+        coder.temperature = temp
+        temp += 0.25
+
+        dump(gold_files)
         coder.run(problem)
         added_files = coder.get_inchat_relative_files()
-        dump(rel_gold_files)
+        dump(gold_files)
         dump(added_files)
         dump(instance_id)
 
+        cost += coder.total_cost
+
         # Get the diff between the current state and the original commit
-        commit = entry['base_commit']
-        diff_cmd = f"git -C {git_tempdir} diff {commit}"
+        diff = diff_versus_commit(git_tempdir, entry['base_commit'])
+        dump(diff)
 
-        diff_output = subprocess.check_output(diff_cmd.split()).decode()
-        dump(diff_output)
-
-        tried_again_from_tests = False
-        tried_again_no_diff = False
-
-        if diff_output:
-            passed_before,_output = run_tests(entry)
-            dump(passed_before)
-            if passed_before:
-                passed_with_patch,_output = run_tests(entry, model_patch=diff_output)
-                dump(passed_with_patch)
-                if not passed_with_patch:
-                    diff_output = None # try again, we broke some existing tests
-                    tried_again_from_tests = True
-        else:
-            tried_again_no_diff = True
-
-        if not diff_output:
-            coder.commands.cmd_clear()
-            coder.commands.cmd_drop()
-            coder.temperature = 0.3
-
-            coder.run(problem)
-            diff_output = subprocess.check_output(diff_cmd.split()).decode()
-
-        print(f"\nDiff between current state and commit {commit}:")
-        print(diff_output)
-
-        res = dict(
-            model_patch=diff_output,
-            cost=coder.total_cost,
+        result = dict(
+            model_patch=diff,
             added_files=added_files,
-            gold_files=rel_gold_files,
-            edited_files=files_in_patch(diff_output),
-            tried_again_from_tests=tried_again_from_tests,
-            tried_again_no_diff = tried_again_no_diff,
+            gold_files=gold_files,
+            edited_files=files_in_patch(diff),
         )
+        results.append(result)
 
-    res.update(dict(
+        if not diff:
+            continue
+
+        lint_errors = ''
+        for fname in files_in_patch(diff):
+            lint_errors += lint(Path(git_tempdir) / fname)
+
+        if lint_errors:
+            dump(lint_errors)
+            continue
+
+        if passed_tests_before is None:
+            passed_tests_before,_output = run_tests(entry)
+            dump(passed_tests_before)
+
+        if passed_tests_before:
+            passed_with_patch,_output = run_tests(entry, model_patch=diff)
+            dump(passed_with_patch)
+            if not passed_with_patch:
+                continue
+
+        results = [result]
+        break
+
+    for result in results:
+        if result['model_patch']:
+            break
+
+    if not result['model_patch']:
+        result = result[0]
+
+
+    print(f"\n\nFinal diff:\n")
+    print(diff)
+
+    result.update(dict(
         instance_id=instance_id,
         model_name_or_path=out_dname.name,
+        cost=cost,
+        tries=tries,
     ))
 
     out_fname = out_dname / (instance_id + ".json")
-    out_fname.write_text(json.dumps(res, indent=4))
+    out_fname.write_text(json.dumps(result, indent=4))
 
 
 def main():
@@ -267,7 +283,7 @@ def main():
     model = "gpt-4o"
     #model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "tests-"
+    prefix = "tries-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug

@@ -18,7 +18,7 @@ from swebench_docker.utils import get_instances, get_test_directives
 from swebench_docker.run_docker import run_docker_evaluation
 from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 
-from harness import get_dataset, files_in_patch, checkout_repo
+from harness import get_dataset, files_in_patch, checkout_repo, lint
 from report import load_predictions
 
 from flake8.api import legacy as flake8
@@ -30,19 +30,8 @@ def lint_pycompile(fname):
     except py_compile.PyCompileError as err:
         return err.msg
 
-def lint(fname):
-    style_guide = flake8.get_style_guide()
-    report = style_guide.check_files([str(fname)])
-    
-    if report.total_errors == 0:
-        return None
-    
-    errors = []
-    for error in report.get_statistics('E'):
-        errors.append(error)
-    
-    return "\n".join(errors)
-
+#lint("lint.py")
+#sys.exit()
 
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
@@ -85,10 +74,6 @@ for inst,pred in items:
     if errors:
         dump(errors)
         after_errors += 1
-
-    #commit = entry['base_commit']
-    #diff_cmd = f"git -C {git_tempdir} diff {commit}"
-    #diff_output = subprocess.check_output(diff_cmd.split()).decode()
 
     dump(num)
     dump(before_errors)
