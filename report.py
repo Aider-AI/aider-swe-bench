@@ -93,6 +93,8 @@ def main():
 
     predictions = load_predictions(sys.argv[1:])
 
+    dump(len(predictions))
+
     predictions_jsonl = tempfile.NamedTemporaryFile(suffix = ".jsonl").name
     with open(predictions_jsonl, "w") as fh:
         for inst,pred in predictions.items():

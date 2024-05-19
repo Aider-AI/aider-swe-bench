@@ -29,13 +29,6 @@ PREDS_DNAME = Path("predictions")
 
 import subprocess
 
-def lint(fname):
-    fatal = 'E9,F821,F823,F831,F406,F407,F701,F702,F704,F706'
-    cmd = f"flake8 --select={fatal} --show-source --exit-zero {fname}"
-    errors = subprocess.check_output(cmd.split()).decode()
-    return errors
-
-
 def diff_versus_commit(git_dname, commit):
     diff_cmd = f"git -C {git_dname} diff {commit}"
     diff_output = subprocess.check_output(diff_cmd.split()).decode()
@@ -133,7 +126,7 @@ def show_problems(dataset):
 
 
 
-def get_coder(model, git_dname, chat_history_file, oracle_files=None):
+def get_coder(model, temp, git_dname, instance_id, base_commit, chat_history_file, oracle_files=None):
 
     if oracle_files:
         oracle_files = [Path(git_tempdir) / fname for fname in oracle_files]
@@ -146,6 +139,8 @@ def get_coder(model, git_dname, chat_history_file, oracle_files=None):
         input_history_file="/dev/null",
     )
 
+    test_cmd = f"python run_pre_existing_tests.py {instance_id} {base_commit} {git_dname}"
+
     coder = Coder.create(
         main_model=model,
         io=io,
@@ -153,25 +148,25 @@ def get_coder(model, git_dname, chat_history_file, oracle_files=None):
         map_tokens = 2048,
         stream=False,
         auto_commits=False,
+        fnames=oracle_files,
+        test_cmd=test_cmd,
         #verbose=True,
-        fnames = oracle_files,
     )
+    coder.temperature = temp
 
     coder.show_announcements()
-    coder.max_apply_update_errors = 2
 
     #messages = coder.format_messages()
     #utils.show_messages(messages)
+
     return coder
 
-THREADS = 10
-
-@lox.thread(THREADS)
 def process_one_instance(entry, model, out_dname):
 
     oracle = False
 
     instance_id = entry['instance_id']
+    base_commit = entry['base_commit']
 
     print("="*60)
     dump(instance_id)
@@ -187,20 +182,26 @@ def process_one_instance(entry, model, out_dname):
 
     chat_history_file = out_dname / (instance_id + '.md')
 
-    passed_tests_before = None
     results = []
     tries = 0
     temp = 0.
     cost = 0
+    winner = None
     while tries < 3:
 
         tries += 1
         dump(tries, temp)
 
         git_tempdir = checkout_repo(entry)
-        coder = get_coder(model, git_tempdir, chat_history_file, oracle_files)
-
-        coder.temperature = temp
+        coder = get_coder(
+            model,
+            temp,
+            instance_id,
+            base_commit,
+            git_tempdir,
+            chat_history_file,
+            oracle_files,
+        )
         temp += 0.25
 
         dump(gold_files)
@@ -213,61 +214,60 @@ def process_one_instance(entry, model, out_dname):
         cost += coder.total_cost
 
         # Get the diff between the current state and the original commit
-        diff = diff_versus_commit(git_tempdir, entry['base_commit'])
+        model_patch = diff_versus_commit(git_tempdir, base_commit)
         dump(diff)
 
         result = dict(
-            model_patch=diff,
+            temperature=temp,
+            model_patch=model_patch,
             added_files=added_files,
             gold_files=gold_files,
             edited_files=files_in_patch(diff),
+            edit_outcome=coder.edit_outcome,
+            lint_outcome=coder.lint_outcome,
+            test_outcome=coder.test_outcome,
         )
+        result['try'] = tries
         results.append(result)
 
-        if not diff:
-            continue
+        dump(result)
 
-        lint_errors = ''
-        for fname in files_in_patch(diff):
-            lint_errors += lint(Path(git_tempdir) / fname)
-
-        if lint_errors:
-            dump(lint_errors)
-            continue
-
-        if passed_tests_before is None:
-            passed_tests_before,_output = run_tests(entry)
-            dump(passed_tests_before)
-
-        if passed_tests_before:
-            passed_with_patch,_output = run_tests(entry, model_patch=diff)
-            dump(passed_with_patch)
-            if not passed_with_patch:
-                continue
-
-        results = [result]
-        break
-
-    for result in results:
-        if result['model_patch']:
+        if model_patch and edit_outcome and lint_outcome and test_outcome:
+            winner = result
             break
 
-    if not result['model_patch']:
-        result = result[0]
-
+    if not winner:
+        # Look for one that passed everything but tests
+        for res in results:
+            if res['model_patch'] and res['edit_outcome'] and res['lint_outcome']:
+                winner = res
+                break
+    if not winner:
+        # Look for one that compiles!
+        for res in results:
+            if res['model_patch'] and res['lint_outcome']:
+                winner = res
+                break
+    if not winner:
+        # Take anything that has a patch!!
+        for res in results:
+            if res['model_patch']:
+                winner = res
+                break
 
     print(f"\n\nFinal diff:\n")
-    print(diff)
+    print(winner['model_patch'])
 
-    result.update(dict(
+    winner.update(dict(
         instance_id=instance_id,
         model_name_or_path=out_dname.name,
         cost=cost,
         tries=tries,
+        all_results=results,
     ))
 
     out_fname = out_dname / (instance_id + ".json")
-    out_fname.write_text(json.dumps(result, indent=4))
+    out_fname.write_text(json.dumps(winner, indent=4))
 
 
 def main():
@@ -311,8 +311,9 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / model_slug
     chat_history_dname.mkdir(exist_ok=True)
 
+    THREADS=10
     if THREADS > 1:
-        process_one_instance_func = process_one_instance.scatter
+        process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
         process_one_instance_func = process_one_instance
 
