@@ -1,33 +1,31 @@
 #!/usr/bin/env python
 
-import random
 import json
-import time
 import os
+import random
+import re
 import sys
 import tempfile
-import re
-import lox
-
-from pathlib import Path
+import time
 from collections import defaultdict
+from pathlib import Path
 
+import lox
+from aider import utils
+from aider.coders import Coder
+from aider.io import InputOutput
+from aider.models import Model
 from datasets import load_dataset
 
 from dump import dump
-
-from aider.io import InputOutput
-from aider.coders import Coder
-from aider.models import Model
-from aider import utils
-
 from tests import run_tests
 
-REPOS_DNAME = Path('repos')
+REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
 PREDS_DNAME = Path("predictions")
 
 import subprocess
+
 
 def diff_versus_commit(git_dname, commit):
     diff_cmd = f"git -C {git_dname} diff {commit}"
@@ -40,17 +38,18 @@ def files_in_patch(patch):
     Extract the list of modified files from a unified diff patch string.
     """
     files = []
-    for line in patch.split('\n'):
-        if line.startswith('--- a/') or line.startswith('+++ b/'):
-            fname = line.split('/', 1)[1]
+    for line in patch.split("\n"):
+        if line.startswith("--- a/") or line.startswith("+++ b/"):
+            fname = line.split("/", 1)[1]
             if fname not in files:
                 files.append(fname)
     return files
 
+
 def checkout_repo(entry, dname=None):
-    github_url = 'https://github.com/'
-    repo_url = github_url + entry['repo']
-    commit = entry['base_commit']
+    github_url = "https://github.com/"
+    repo_url = github_url + entry["repo"]
+    commit = entry["base_commit"]
 
     print(repo_url, commit)
 
@@ -64,7 +63,7 @@ def checkout_repo_url_commit(url, commit, dname):
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
 
-    #dump(repo_name)
+    # dump(repo_name)
     bare_repo = REPOS_DNAME / repo_name
 
     if not bare_repo.exists():
@@ -83,51 +82,52 @@ def checkout_repo_url_commit(url, commit, dname):
     cmd = f"git -c advice.detachedHead=false -C {repo_dname} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
 
-    #IGNORE = '*test*\n'
-    #ignore = Path(repo_dname) / '.aiderignore'
-    #ignore.write_text(IGNORE)
+    # IGNORE = '*test*\n'
+    # ignore = Path(repo_dname) / '.aiderignore'
+    # ignore.write_text(IGNORE)
 
     return repo_dname
 
 
 DATASET = "princeton-nlp/SWE-bench_Lite"
-DATASET_JSON = DATASET.replace('/', '--') + '.json'
+DATASET_JSON = DATASET.replace("/", "--") + ".json"
+
 
 def get_dataset():
-
     fname = Path(DATASET_JSON)
     if fname.exists():
         dataset = json.loads(fname.read_text())
     else:
         dataset = load_dataset(DATASET)
-        dataset = dataset['test']
+        dataset = dataset["test"]
         dump_dataset(dataset)
 
     res = dict()
     for entry in dataset:
-        res[entry['instance_id']] = entry
+        res[entry["instance_id"]] = entry
 
     return res
+
 
 def dump_dataset(dataset):
     entries = list(dataset)
     for entry in entries:
-        entry['FAIL_TO_PASS'] = json.loads(entry['FAIL_TO_PASS'])
-        entry['PASS_TO_PASS'] = json.loads(entry['PASS_TO_PASS'])
+        entry["FAIL_TO_PASS"] = json.loads(entry["FAIL_TO_PASS"])
+        entry["PASS_TO_PASS"] = json.loads(entry["PASS_TO_PASS"])
 
     with open(DATASET_JSON, "w") as f:
         json.dump(entries, f, indent=4)
 
 
 def show_problems(dataset):
-    for inst,entry in dataset.items():
-        problem = entry['problem_statement'].splitlines()[0]
+    for inst, entry in dataset.items():
+        problem = entry["problem_statement"].splitlines()[0]
         print(f"{inst}: {problem}")
 
 
-
-def get_coder(model, temp, git_dname, instance_id, base_commit, chat_history_file, oracle_files=None):
-
+def get_coder(
+    model, temp, git_dname, instance_id, base_commit, chat_history_file, oracle_files=None
+):
     if oracle_files:
         oracle_files = [Path(git_tempdir) / fname for fname in oracle_files]
 
@@ -145,50 +145,49 @@ def get_coder(model, temp, git_dname, instance_id, base_commit, chat_history_fil
         main_model=model,
         io=io,
         git_dname=git_dname,
-        map_tokens = 2048,
+        map_tokens=2048,
         stream=False,
         auto_commits=False,
         fnames=oracle_files,
         test_cmd=test_cmd,
-        #verbose=True,
+        # verbose=True,
     )
     coder.temperature = temp
 
     coder.show_announcements()
 
-    #messages = coder.format_messages()
-    #utils.show_messages(messages)
+    # messages = coder.format_messages()
+    # utils.show_messages(messages)
 
     return coder
 
-def process_one_instance(entry, model, out_dname):
 
+def process_one_instance(entry, model, out_dname):
     oracle = False
 
-    instance_id = entry['instance_id']
-    base_commit = entry['base_commit']
+    instance_id = entry["instance_id"]
+    base_commit = entry["base_commit"]
 
-    print("="*60)
+    print("=" * 60)
     dump(instance_id)
-    print("="*60)
+    print("=" * 60)
     problem = entry["problem_statement"]
     print(problem)
 
-    gold_files = files_in_patch(entry['patch'])
+    gold_files = files_in_patch(entry["patch"])
     if oracle:
         oracle_files = gold_files
     else:
         oracle_files = None
 
-    chat_history_file = out_dname / (instance_id + '.md')
+    chat_history_file = out_dname / (instance_id + ".md")
 
     results = []
     tries = 0
-    temp = 0.
+    temp = 0.0
     cost = 0
     winner = None
     while tries < 3:
-
         tries += 1
         dump(tries, temp)
 
@@ -227,7 +226,7 @@ def process_one_instance(entry, model, out_dname):
             lint_outcome=coder.lint_outcome,
             test_outcome=coder.test_outcome,
         )
-        result['try'] = tries
+        result["try"] = tries
         results.append(result)
 
         dump(result)
@@ -239,49 +238,50 @@ def process_one_instance(entry, model, out_dname):
     if not winner:
         # Look for one that passed everything but tests
         for res in results:
-            if res['model_patch'] and res['edit_outcome'] and res['lint_outcome']:
+            if res["model_patch"] and res["edit_outcome"] and res["lint_outcome"]:
                 winner = res
                 break
     if not winner:
         # Look for one that compiles!
         for res in results:
-            if res['model_patch'] and res['lint_outcome']:
+            if res["model_patch"] and res["lint_outcome"]:
                 winner = res
                 break
     if not winner:
         # Take anything that has a patch!!
         for res in results:
-            if res['model_patch']:
+            if res["model_patch"]:
                 winner = res
                 break
 
     print(f"\n\nFinal diff:\n")
-    print(winner['model_patch'])
+    print(winner["model_patch"])
 
-    winner.update(dict(
-        instance_id=instance_id,
-        model_name_or_path=out_dname.name,
-        cost=cost,
-        tries=tries,
-        all_results=results,
-    ))
+    winner.update(
+        dict(
+            instance_id=instance_id,
+            model_name_or_path=out_dname.name,
+            cost=cost,
+            tries=tries,
+            all_results=results,
+        )
+    )
 
     out_fname = out_dname / (instance_id + ".json")
     out_fname.write_text(json.dumps(winner, indent=4))
 
 
 def main():
-
     dataset = get_dataset()
 
-    #model = "gemini/gemini-1.5-pro-latest"
-    #model = "gpt-3.5-turbo"
-    #model = "gpt-4-1106-preview"
-    #model = "gold"
+    # model = "gemini/gemini-1.5-pro-latest"
+    # model = "gpt-3.5-turbo"
+    # model = "gpt-4-1106-preview"
+    # model = "gold"
 
-    #model = "deepseek/deepseek-chat"
+    # model = "deepseek/deepseek-chat"
     model = "gpt-4o"
-    #model = "openrouter/anthropic/claude-3-opus"
+    # model = "openrouter/anthropic/claude-3-opus"
 
     prefix = "tries-"
 
@@ -296,12 +296,9 @@ def main():
         if not text:
             continue
         rec = json.loads(fname.read_text())
-        done_instances.add(rec['instance_id'])
+        done_instances.add(rec["instance_id"])
 
-    all_instances = [
-        Path(fn).with_suffix("").name
-        for fn in sys.argv[1:]
-    ]
+    all_instances = [Path(fn).with_suffix("").name for fn in sys.argv[1:]]
     if not all_instances:
         all_instances = dataset.keys()
 
@@ -311,7 +308,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / model_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS=10
+    THREADS = 10
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
@@ -319,7 +316,7 @@ def main():
 
     for instance_id in all_instances:
         if instance_id in done_instances:
-            print('skipping', instance_id)
+            print("skipping", instance_id)
             continue
 
         process_one_instance_func(
@@ -328,13 +325,13 @@ def main():
             out_dname,
         )
 
-        print('#'*60)
-        #input()
+        print("#" * 60)
+        # input()
 
     if THREADS > 1:
         process_one_instance.gather()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     status = main()
     sys.exit(status)

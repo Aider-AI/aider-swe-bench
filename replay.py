@@ -1,42 +1,40 @@
 #!/usr/bin/env python
 
-import random
 import json
-import time
 import os
+import random
+import shutil
 import sys
 import tempfile
-import shutil
-
-from pathlib import Path
+import time
 from collections import defaultdict
+from pathlib import Path
 
+from aider import utils
+from aider.coders import Coder
+from aider.io import InputOutput
+from aider.models import Model
 from datasets import load_dataset
 
+import harness
 from dump import dump
 
-from aider.io import InputOutput
-from aider.coders import Coder
-from aider.models import Model
-from aider import utils
-import harness
 
 def main():
-
     dataset = harness.get_dataset()
 
     fnames = sys.argv[1:]
     for fname in fnames:
         doit(dataset, fname)
 
-def doit(dataset, fname):
 
+def doit(dataset, fname):
     fname = Path(fname)
-    if fname.suffix != '.md':
-        fname = fname.with_suffix('.md')
+    if fname.suffix != ".md":
+        fname = fname.with_suffix(".md")
 
     text = fname.read_text()
-    #if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
+    # if 'InvalidEditBlock' not in text and 'SearchReplaceNoExactMatch' not in text:
     #    return
 
     instance_id = fname.with_suffix("").name
@@ -45,8 +43,8 @@ def doit(dataset, fname):
     dump(fname)
     dump(instance_id)
 
-    dump(entry['problem_statement'])
-    dump(entry['patch'])
+    dump(entry["problem_statement"])
+    dump(entry["patch"])
 
     messages = utils.split_chat_history_markdown(text, include_tool=True)
     utils.show_messages(messages)
@@ -74,32 +72,32 @@ def doit(dataset, fname):
         git_dname=repo_dname,
     )
 
-    dump(messages[3]['content'])
-    coder.check_for_file_mentions(messages[3]['content'])
+    dump(messages[3]["content"])
+    coder.check_for_file_mentions(messages[3]["content"])
 
     edits = [
         i
         for i in range(len(messages))
-        if messages[i]['role'] == 'assistant' and '<<<<<<' in messages[i]['content']
+        if messages[i]["role"] == "assistant" and "<<<<<<" in messages[i]["content"]
     ]
     bad_edit = min(edits)
     dump(edits)
 
     try:
-        edit_error = messages[bad_edit+1]['content']
+        edit_error = messages[bad_edit + 1]["content"]
     except IndexError:
         print("No edit error message??")
         input()
         return
 
-    #assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
+    # assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
 
-    edit_error = messages[bad_edit+2]['content']
+    edit_error = messages[bad_edit + 2]["content"]
 
-    #utils.show_messages(messages)
-    bad_edit = messages[bad_edit]['content']
+    # utils.show_messages(messages)
+    bad_edit = messages[bad_edit]["content"]
 
-    gold_patch = entry['patch']
+    gold_patch = entry["patch"]
     print(gold_patch)
     print(bad_edit)
     print(edit_error)
@@ -109,6 +107,7 @@ def doit(dataset, fname):
     coder.apply_updates()
     input()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     status = main()
     sys.exit(status)

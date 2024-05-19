@@ -1,27 +1,25 @@
 #!/usr/bin/env python
 
-import sys
-import json
 import asyncio
+import json
 import py_compile
-import tempfile
-import subprocess
 import random
+import subprocess
+import sys
+import tempfile
 import traceback
-
+from collections import Counter, defaultdict
 from pathlib import Path
-from collections import defaultdict, Counter
-
-from dump import dump
-
-from swebench_docker.utils import get_instances, get_test_directives
-from swebench_docker.run_docker import run_docker_evaluation
-from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
-
-from harness import get_dataset, files_in_patch, checkout_repo, lint
-from report import load_predictions
 
 from flake8.api import legacy as flake8
+
+from dump import dump
+from harness import checkout_repo, files_in_patch, get_dataset, lint
+from report import load_predictions
+from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
+from swebench_docker.run_docker import run_docker_evaluation
+from swebench_docker.utils import get_instances, get_test_directives
+
 
 def lint_pycompile(fname):
     try:
@@ -30,8 +28,9 @@ def lint_pycompile(fname):
     except py_compile.PyCompileError as err:
         return err.msg
 
-#lint("lint.py")
-#sys.exit()
+
+# lint("lint.py")
+# sys.exit()
 
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
@@ -45,10 +44,10 @@ num = 0
 before_errors = 0
 after_errors = 0
 
-for inst,pred in items:
+for inst, pred in items:
     entry = dataset[inst]
     git_tempdir = checkout_repo(entry)
-    model_patch = pred['model_patch']
+    model_patch = pred["model_patch"]
     if not model_patch:
         continue
 
