@@ -10,6 +10,9 @@ from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 from swebench_docker.run_docker import run_docker_evaluation
 from swebench_docker.utils import get_test_directives
 
+# A no-op patch which creates an empty file is used to stand in for
+# the `model_patch` and/or `test_patch` when running SWE Bench tests
+# without one or both of those patches.
 NOOP_PATCH = (
     "diff --git a/empty.file.{nonce}.ignore b/empty.file.{nonce}.ignore\n"
     "new file mode 100644\n"
@@ -17,20 +20,30 @@ NOOP_PATCH = (
 )
 
 
-def run_tests(entry, model_patch=None, use_new_tests=False, model_name_or_path="none"):
+def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path="none"):
+    """
+    Run tests for the SWE Bench `entry`, optionally applying a `model_patch` first.
+
+    If `use_test_patch` is True, then also apply the `test_patch` to bring in
+    the tests which determine if the issue is resolved. So False means
+    only run the tests that existed at the `base_commit` and any new/changed
+    tests contained in the `model_patch`.
+
+    Optionally specify a `model_name_or_path`, which isn't really used since
+    the log_dir for the tests is a temp dir which is discarded.
+    """
     instance_id = entry["instance_id"]
-    dump(instance_id)
 
     test_type = MAP_REPO_TO_TEST_FRAMEWORK[entry["repo"]]
     test_directives = get_test_directives(entry)
     test_cmd = f"{test_type} {' '.join(test_directives)}"
 
-    dump(test_cmd)
-
+    # Use a no-op patch if no model_patch is provided
     if not model_patch:
         model_patch = NOOP_PATCH.format(nonce="model_patch")
 
-    if use_new_tests:
+    # Use a no-op patch if use_test_patch is False
+    if use_test_patch:
         test_patch = entry["test_patch"]
     else:
         test_patch = NOOP_PATCH.format(nonce="test_patch")
@@ -51,8 +64,6 @@ def run_tests(entry, model_patch=None, use_new_tests=False, model_name_or_path="
     log_dir = tempfile.TemporaryDirectory(dir="/tmp").name
     timeout = 60
     log_suffix = ""
-
-    dump(log_dir)
 
     asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix))
 

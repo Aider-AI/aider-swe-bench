@@ -163,7 +163,7 @@ def run_pre_existing_tests(entry, git_dname):
     passed, output = run_tests(
         entry,
         model_patch=model_patch,
-        use_new_tests=False,
+        use_test_patch=False,
     )
     if passed:
         return
