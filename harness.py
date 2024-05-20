@@ -6,6 +6,7 @@ import random
 import sys
 import tempfile
 from pathlib import Path
+import subprocess
 
 import lox
 from aider.coders import Coder
@@ -18,8 +19,6 @@ from dump import dump
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
 PREDS_DNAME = Path("predictions")
-
-import subprocess
 
 
 def diff_versus_commit(git_dname, commit):
