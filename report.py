@@ -6,7 +6,6 @@ import random
 import subprocess
 import sys
 import tempfile
-import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -235,7 +234,6 @@ def stats_on_tests_before_and_after(report, predictions):
     num_before_pass = 0
     num_pass_to_fail = 0
 
-    has_patch_not_resolved = set(report["generated"]) - set(report["resolved"])
     dataset = get_dataset()
 
     random.shuffle(predictions)
