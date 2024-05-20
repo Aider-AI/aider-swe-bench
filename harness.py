@@ -344,8 +344,9 @@ def main():
     model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    # todo set hsh to the hash of the current git repo
-    prefix = "aider-{hsh}-"
+    # Get the current git commit hash
+    hsh = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+    prefix = f"aider-{hsh}-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
