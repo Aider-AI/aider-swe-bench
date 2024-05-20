@@ -1,20 +1,13 @@
 #!/usr/bin/env python
 
-import json
-import os
-import random
 import shutil
 import sys
-import tempfile
-import time
-from collections import defaultdict
 from pathlib import Path
 
 from aider import utils
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model
-from datasets import load_dataset
 
 import harness
 from dump import dump
@@ -90,7 +83,8 @@ def doit(dataset, fname):
         input()
         return
 
-    # assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error, edit_error
+    # assert 'InvalidEditBlock' in edit_error or 'SearchReplaceNoExactMatch' in edit_error,
+    # edit_error
 
     edit_error = messages[bad_edit + 2]["content"]
 
