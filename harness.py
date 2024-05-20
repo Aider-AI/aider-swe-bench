@@ -1,24 +1,19 @@
 #!/usr/bin/env python
 
 import json
-import os
+import json
 import random
-import re
 import sys
 import tempfile
-import time
-from collections import defaultdict
 from pathlib import Path
 
 import lox
-from aider import utils
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model
 from datasets import load_dataset
 
 from dump import dump
-from tests import run_tests
 
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -128,8 +123,8 @@ def show_problems(dataset):
 def get_coder(
     model, temp, git_dname, instance_id, base_commit, chat_history_file, oracle_files=None
 ):
-    if oracle_files:
-        oracle_files = [Path(git_tempdir) / fname for fname in oracle_files]
+    if oracle_files and git_dname:
+        oracle_files = [Path(git_dname) / fname for fname in oracle_files]
 
     model = Model(model)
     io = InputOutput(
@@ -214,14 +209,14 @@ def process_one_instance(entry, model, out_dname):
 
         # Get the diff between the current state and the original commit
         model_patch = diff_versus_commit(git_tempdir, base_commit)
-        dump(diff)
+        dump(model_patch)
 
         result = dict(
             temperature=temp,
             model_patch=model_patch,
             added_files=added_files,
             gold_files=gold_files,
-            edited_files=files_in_patch(diff),
+            edited_files=files_in_patch(model_patch),
             edit_outcome=coder.edit_outcome,
             lint_outcome=coder.lint_outcome,
             test_outcome=coder.test_outcome,
@@ -231,7 +226,7 @@ def process_one_instance(entry, model, out_dname):
 
         dump(result)
 
-        if model_patch and edit_outcome and lint_outcome and test_outcome:
+        if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
             winner = result
             break
 
@@ -254,7 +249,7 @@ def process_one_instance(entry, model, out_dname):
                 winner = res
                 break
 
-    print(f"\n\nFinal diff:\n")
+    print("\n\nFinal diff:\n")
     print(winner["model_patch"])
 
     winner.update(
