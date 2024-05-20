@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import asyncio
-import json
 import sys
 import tempfile
 from pathlib import Path
@@ -58,7 +57,9 @@ def run_tests(
     dump(log_dir)
 
     asyncio.run(
-        run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix)
+        run_docker_evaluation(
+            entry_instance, namespace, log_dir, timeout, log_suffix
+        )
     )
 
     log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
@@ -78,7 +79,6 @@ def main():
 
     dataset = get_dataset()
 
-    pred_path = "predictions/oracle-openrouter--anthropic--claude-3-opus.jsonl"
 
     num = 0
     num_passed = 0
