@@ -2,10 +2,10 @@
 
 import json
 import random
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
-import subprocess
 
 import lox
 from aider.coders import Coder
@@ -14,6 +14,7 @@ from aider.models import Model
 from datasets import load_dataset
 
 from dump import dump
+from tests import run_tests
 
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -21,6 +22,10 @@ PREDS_DNAME = Path("predictions")
 
 
 def diff_versus_commit(git_dname, commit):
+    """
+    Take a diff of `git_dname` current contents versus the `commit`.
+    """
+
     diff_cmd = f"git -C {git_dname} diff {commit}"
     diff_output = subprocess.check_output(diff_cmd.split()).decode()
     return diff_output
@@ -40,6 +45,10 @@ def files_in_patch(patch):
 
 
 def checkout_repo(entry, dname=None):
+    """
+    Clone the SWE Bench entry's git `repo` into `dname` at the `base_commit`.
+    Make a tempdir if no `dname` provided.
+    """
     github_url = "https://github.com/"
     repo_url = github_url + entry["repo"]
     commit = entry["base_commit"]
@@ -52,6 +61,11 @@ def checkout_repo(entry, dname=None):
 
 
 def checkout_repo_url_commit(url, commit, dname):
+    """
+    Clone the git `url` into `dname` at `commit`.
+    Check a local cache of the bare repo to avoid pulling from github every time.
+    """
+
     # Extract repo name from URL
     repo_name = url.split("/")[-1].split(".")[0]
     repo_name += ".git"
@@ -87,6 +101,12 @@ DATASET_JSON = DATASET.replace("/", "--") + ".json"
 
 
 def get_dataset():
+    """
+    Load the `DATASET` from hugging face, and turn it into a dict
+    keyed on `instance_id`.
+    Cache the dict locally in a json file.
+    """
+
     fname = Path(DATASET_JSON)
     if fname.exists():
         dataset = json.loads(fname.read_text())
@@ -103,6 +123,9 @@ def get_dataset():
 
 
 def dump_dataset(dataset):
+    """
+    Save the dataset to json.
+    """
     entries = list(dataset)
     for entry in entries:
         entry["FAIL_TO_PASS"] = json.loads(entry["FAIL_TO_PASS"])
@@ -113,14 +136,48 @@ def dump_dataset(dataset):
 
 
 def show_problems(dataset):
+    """
+    Print out all the instance_id and problem_descriptions.
+    """
     for inst, entry in dataset.items():
         problem = entry["problem_statement"].splitlines()[0]
         print(f"{inst}: {problem}")
 
 
-def get_coder(
-    model, temp, git_dname, instance_id, base_commit, chat_history_file, oracle_files=None
-):
+def run_pre_existing_tests(entry, git_dname):
+    """Given the current contents of the `git_dname`, run the tests that
+    were present in the entry's `repo` at the time of the
+    `base_commit`.  This checks if the code in the `git_dname` has
+    broken any pre-existing tests.
+
+    Does NOT attempt to run the tests in the `test_patch` tests which
+    are used to evaluate whether the `model_patch` has resolved the
+    `problem_statement`.
+
+    Returns None if all the tests passed. Returns the text of the
+    test run output if any failed.
+    """
+
+    model_patch = diff_versus_commit(git_dname, entry["base_commit"])
+    passed, output = run_tests(
+        entry,
+        model_patch=model_patch,
+        use_new_tests=False,
+    )
+    if passed:
+        return
+    return output
+
+
+def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle_files=None):
+    """
+    Get an aider coder object to work with the given LLM `model` at `temperature`
+    on the code in `git_dname`. Will store the markdown chat logs in
+    the `chat_history_file`. Tells aider it can use the `test_cmd` to
+    run tests after the LLM edits files.
+
+    If `oracle_files` is provided, they are added to the aider chat automatically.
+    """
     if oracle_files and git_dname:
         oracle_files = [Path(git_dname) / fname for fname in oracle_files]
 
@@ -132,7 +189,7 @@ def get_coder(
         input_history_file="/dev/null",
     )
 
-    test_cmd = f"python run_pre_existing_tests.py {instance_id} {base_commit} {git_dname}"
+    dump(git_dname)
 
     coder = Coder.create(
         main_model=model,
@@ -142,10 +199,11 @@ def get_coder(
         stream=False,
         auto_commits=False,
         fnames=oracle_files,
+        auto_test=True,
         test_cmd=test_cmd,
         # verbose=True,
     )
-    coder.temperature = temp
+    coder.temperature = temperature
 
     coder.show_announcements()
 
@@ -177,31 +235,34 @@ def process_one_instance(entry, model, out_dname):
 
     results = []
     tries = 0
-    temp = 0.0
+    temperature = 0.0
     cost = 0
     winner = None
     while tries < 3:
         tries += 1
-        dump(tries, temp)
+        dump(tries, temperature)
 
         git_tempdir = checkout_repo(entry)
+        dump(git_tempdir)
+
+        test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
+
         coder = get_coder(
             model,
-            temp,
-            instance_id,
-            base_commit,
+            temperature,
             git_tempdir,
             chat_history_file,
+            test_cmd,
             oracle_files,
         )
-        temp += 0.25
 
+        dump(instance_id)
         dump(gold_files)
         coder.run(problem)
         added_files = coder.get_inchat_relative_files()
+        dump(instance_id)
         dump(gold_files)
         dump(added_files)
-        dump(instance_id)
 
         cost += coder.total_cost
 
@@ -210,8 +271,13 @@ def process_one_instance(entry, model, out_dname):
         dump(model_patch)
 
         result = dict(
-            temperature=temp,
+            # Required args for running eval tests
+            instance_id=instance_id,
+            model_name_or_path=out_dname.name,
             model_patch=model_patch,
+            # For computing stats
+            cost=cost,
+            temperature=temperature,
             added_files=added_files,
             gold_files=gold_files,
             edited_files=files_in_patch(model_patch),
@@ -227,6 +293,8 @@ def process_one_instance(entry, model, out_dname):
         if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
             winner = result
             break
+
+        temperature += 0.25
 
     if not winner:
         # Look for one that passed everything but tests
@@ -250,11 +318,11 @@ def process_one_instance(entry, model, out_dname):
     print("\n\nFinal diff:\n")
     print(winner["model_patch"])
 
+    # Avoid circular reference when we save to json
+    winner = dict(winner)
+
     winner.update(
         dict(
-            instance_id=instance_id,
-            model_name_or_path=out_dname.name,
-            cost=cost,
             tries=tries,
             all_results=results,
         )
@@ -272,11 +340,11 @@ def main():
     # model = "gpt-4-1106-preview"
     # model = "gold"
 
-    # model = "deepseek/deepseek-chat"
-    model = "gpt-4o"
+    model = "deepseek/deepseek-chat"
+    # model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "tries-"
+    prefix = "aider-lints-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
@@ -301,7 +369,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / model_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 10
+    THREADS = 1
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
