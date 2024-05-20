@@ -147,10 +147,11 @@ def show_problems(dataset):
 def run_pre_existing_tests(entry, git_dname):
     """Given the current contents of the `git_dname`, run the tests that
     were present in the entry's `repo` at the time of the
-    `base_commit`.  This checks if the code in the `git_dname` has
-    broken any pre-existing tests.
+    `base_commit` or which have been added into the repo since.  This
+    checks if the code in the `git_dname` has broken pre-existing
+    tests or is failing any newly added tests.
 
-    Does NOT attempt to run the tests in the `test_patch` tests which
+    It does NOT attempt to run the tests in the `test_patch` which
     are used to evaluate whether the `model_patch` has resolved the
     `problem_statement`.
 
@@ -167,7 +168,8 @@ def run_pre_existing_tests(entry, git_dname):
     if passed:
         return
 
-    # Just keep the output after the (no-op) test patch applied
+    # Just keep the output after the (no-op) test patch applied,
+    # which is the actual output from the tests that were run.
     output = output.split(">>>>> Applied Patch (test)")[-1]
 
     return output
@@ -175,22 +177,21 @@ def run_pre_existing_tests(entry, git_dname):
 
 def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle_files=None):
     """
-    Get an aider coder object to work with the given LLM `model` at `temperature`
+    Get an instance of aider to work with the given LLM `model` at `temperature`
     on the code in `git_dname`. Will store the markdown chat logs in
     the `chat_history_file`. Tells aider it can use the `test_cmd` to
     run tests after the LLM edits files.
 
-    If `oracle_files` is provided, they are added to the aider chat automatically.
+    If `oracle_files` are provided, they are added to the aider chat automatically.
     """
     if oracle_files and git_dname:
         oracle_files = [Path(git_dname) / fname for fname in oracle_files]
 
     model = Model(model)
     io = InputOutput(
-        pretty=True,
-        yes=True,
-        chat_history_file=chat_history_file,
-        input_history_file="/dev/null",
+        yes=True,  # Say yes to every suggestion aider makes
+        chat_history_file=chat_history_file,  # Log the chat here
+        input_history_file="/dev/null",  # Don't log the "user input"
     )
 
     dump(git_dname)
@@ -199,17 +200,21 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
         main_model=model,
         io=io,
         git_dname=git_dname,
-        map_tokens=2048,
+        map_tokens=2048,  # Use 2k tokens for the repo map
         stream=False,
-        auto_commits=False,
+        auto_commits=False,  # Don't bother git committing changes
         fnames=oracle_files,
-        auto_test=True,
+        auto_test=True,  # Automatically run the test_cmd after making changes
         test_cmd=test_cmd,
         # verbose=True,
     )
     coder.temperature = temperature
+
+    # Take at most 4 steps before giving up.
+    # Usually set to 5, but this reduces API costs.
     coder.max_reflections = 4
 
+    # Add announcement lines to the markdown chat log
     coder.show_announcements()
 
     # messages = coder.format_messages()
@@ -219,7 +224,11 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
 
 
 def process_one_instance(entry, model, model_name_or_path, out_dname):
-    oracle = False
+    """
+    Process one `entry` from SWE Bench using the LLM `model`.
+    Set `model_name_or_path` in the result json.
+    Store the result json and the chat log into `out_dname`.
+    """
 
     instance_id = entry["instance_id"]
     base_commit = entry["base_commit"]
@@ -227,17 +236,32 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
     print("=" * 60)
     dump(instance_id)
     print("=" * 60)
-    problem = entry["problem_statement"]
-    print(problem)
+    problem_statement = entry["problem_statement"]
+    print(problem_statement)
 
+    ###
+    # DO NOT assist aider by telling it which files need to be modified!
+    oracle = False
     gold_files = files_in_patch(entry["patch"])
     if oracle:
         oracle_files = gold_files
     else:
         oracle_files = None
+    ###
 
     chat_history_file = out_dname / (instance_id + ".md")
 
+    # Boil the frog. Raise the temp until we jump out of a bad local
+    # minimum.
+    #
+    # Give aider the problem_statement and see if it comes back with a
+    # repo that was edited, linted and tested successfully. If not,
+    # raise the temperature and try again.
+    #
+    # Note: Aider is only given tests that existed at the
+    # `base_commit`. It is not given the "future" tests from the
+    # `test_patch` which determine if the issue was resolved.
+    #
     results = []
     tries = 0
     temperature = 0.0
@@ -250,8 +274,10 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
         git_tempdir = checkout_repo(entry)
         dump(git_tempdir)
 
+        # Prepare the test command which will run the pre-existing tests
         test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
 
+        # Get an instance of aider
         coder = get_coder(
             model,
             temperature,
@@ -263,18 +289,27 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
 
         dump(instance_id)
         dump(gold_files)
-        coder.run(problem)
+
+        # Tell aider to work on the `problem_statement`.
+        # This is the same as if you pasted it into a fresh chat with aider
+        # launched in the repo.
+        coder.run(problem_statement)
+
+        # Take note of which files aider added to the chat
         added_files = coder.get_inchat_relative_files()
+
         dump(instance_id)
         dump(gold_files)
         dump(added_files)
 
+        # Keep track of API costs
         cost += coder.total_cost
 
         # Get the diff between the current state and the original commit
         model_patch = diff_versus_commit(git_tempdir, base_commit)
         dump(model_patch)
 
+        # Record the results for the logs
         result = dict(
             # Required args for running eval tests
             instance_id=instance_id,
@@ -290,16 +325,20 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
             lint_outcome=coder.lint_outcome,
             test_outcome=coder.test_outcome,
         )
-        result["try"] = tries
+        result["try"] = tries  # `try` is a python keyword
         results.append(result)
 
         dump(result)
 
+        # Did we get a successful edit, lint and test? If so, we're done!
         if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
             winner = result
             break
 
+        # Otherwise, raise the temperature and try again
         temperature += 0.25
+
+    # If there's no clear winner, look for the most viable result we got...
 
     if not winner:
         # Look for one that passed everything but tests
@@ -334,7 +373,7 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
     winner.update(
         dict(
             tries=tries,
-            all_results=results,
+            all_results=results,  # Record all the results for later analysis
             cost=cost,  # total cost across all results
         )
     )
@@ -382,7 +421,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / model_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 1
+    THREADS = 10
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
