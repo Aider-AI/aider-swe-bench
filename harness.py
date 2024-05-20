@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import random
 import subprocess
@@ -7,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import git
 import lox
 from aider.coders import Coder
 from aider.io import InputOutput
@@ -340,13 +342,20 @@ def main():
     # model = "gpt-4-1106-preview"
     # model = "gold"
 
-    # model = "deepseek/deepseek-chat"
-    model = "gpt-4o"
+    model = "deepseek/deepseek-chat"
+    # model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    # Get the current git commit hash
-    hsh = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-    prefix = f"aider-{hsh}-"
+    prefix = "aider"
+
+    repo = git.Repo(search_parent_directories=True)
+    commit_hash = repo.head.object.hexsha[:7]
+    if repo.is_dirty():
+        commit_hash += "-dirty"
+
+    now = datetime.datetime.now()
+    now = now.strftime("%Y-%m-%d-%H-%M-%S")
+    prefix = f"{now}--{prefix}-{commit_hash}-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
