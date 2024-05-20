@@ -79,7 +79,6 @@ def main():
 
     dataset = get_dataset()
 
-
     num = 0
     num_passed = 0
 
