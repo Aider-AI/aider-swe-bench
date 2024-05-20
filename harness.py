@@ -278,7 +278,7 @@ def process_one_instance(entry, model, out_dname):
             model_name_or_path=out_dname.name,
             model_patch=model_patch,
             # For computing stats
-            cost=cost,
+            cost=coder.total_cost,
             temperature=temperature,
             added_files=added_files,
             gold_files=gold_files,
@@ -316,6 +316,11 @@ def process_one_instance(entry, model, out_dname):
             if res["model_patch"]:
                 winner = res
                 break
+    if not winner:
+        # Take the first result
+        winner = results[0]
+
+    dump(winner)
 
     print("\n\nFinal diff:\n")
     print(winner["model_patch"])
@@ -327,6 +332,7 @@ def process_one_instance(entry, model, out_dname):
         dict(
             tries=tries,
             all_results=results,
+            cost=cost,  # total cost across all results
         )
     )
 
@@ -342,22 +348,13 @@ def main():
     # model = "gpt-4-1106-preview"
     # model = "gold"
 
-    model = "deepseek/deepseek-chat"
-    # model = "gpt-4o"
+    # model = "deepseek/deepseek-chat"
+    model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
     prefix = "aider"
 
-    repo = git.Repo(search_parent_directories=True)
-    commit_hash = repo.head.object.hexsha[:7]
-    if repo.is_dirty():
-        commit_hash += "-dirty"
-
-    now = datetime.datetime.now()
-    now = now.strftime("%Y-%m-%d-%H-%M-%S")
-    prefix = f"{now}--{prefix}-{commit_hash}-"
-
-    model_slug = prefix + model.replace("/", "--")
+    model_slug = prefix + "-" + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
     if not out_dname.exists():
         out_dname.mkdir()

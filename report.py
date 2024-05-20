@@ -91,6 +91,9 @@ def load_predictions(paths):
 
 def main():
     predictions = load_predictions(sys.argv[1:])
+    if not predictions:
+        print("No predictions")
+        return
 
     dump(len(predictions))
 
