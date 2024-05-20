@@ -4,21 +4,23 @@ import asyncio
 import json
 import sys
 import tempfile
-from collections import defaultdict
 from pathlib import Path
 
 from dump import dump
 from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
 from swebench_docker.run_docker import run_docker_evaluation
-from swebench_docker.utils import get_instances, get_test_directives
+from swebench_docker.utils import get_test_directives
 
-NOOP_PATCH = """diff --git a/empty.file.{nonce}.ignore b/empty.file.{nonce}.ignore
-new file mode 100644
-index 0000000..e69de29
-"""
+NOOP_PATCH = (
+    "diff --git a/empty.file.{nonce}.ignore b/empty.file.{nonce}.ignore\n"
+    "new file mode 100644\n"
+    "index 0000000..e69de29\n"
+)
 
 
-def run_tests(entry, model_patch=None, use_new_tests=False, model_name_or_path="none"):
+def run_tests(
+    entry, model_patch=None, use_new_tests=False, model_name_or_path="none"
+):
     instance_id = entry["instance_id"]
     dump(instance_id)
 
@@ -55,13 +57,15 @@ def run_tests(entry, model_patch=None, use_new_tests=False, model_name_or_path="
 
     dump(log_dir)
 
-    asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix))
+    asyncio.run(
+        run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix)
+    )
 
     log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
 
     log_text = log_fname.read_text()
     log_lines = log_text.splitlines()
-    log_lines = [l for l in log_lines if l.startswith(">>>>")]
+    log_lines = [line for line in log_lines if line.startswith(">>>>")]
     print("\n".join(log_lines))
 
     passed = ">>>>> All Tests Passed" in log_text
@@ -75,7 +79,6 @@ def main():
     dataset = get_dataset()
 
     pred_path = "predictions/oracle-openrouter--anthropic--claude-3-opus.jsonl"
-    predictions = [json.loads(line) for line in open(pred_path)]
 
     num = 0
     num_passed = 0
