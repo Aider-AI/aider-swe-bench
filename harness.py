@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import datetime
 import json
 import random
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
-import git
 import lox
 from aider.coders import Coder
 from aider.io import InputOutput
