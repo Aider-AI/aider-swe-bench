@@ -340,11 +340,12 @@ def main():
     # model = "gpt-4-1106-preview"
     # model = "gold"
 
-    model = "deepseek/deepseek-chat"
-    # model = "gpt-4o"
+    # model = "deepseek/deepseek-chat"
+    model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "aider-lints-"
+    # todo set hsh to the hash of the current git repo
+    prefix = "aider-{hsh}-"
 
     model_slug = prefix + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
