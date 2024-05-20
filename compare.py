@@ -1,17 +1,10 @@
 #!/usr/bin/env python
 
-import asyncio
-import json
 import sys
-from collections import Counter, defaultdict
-from pathlib import Path
+from collections import Counter
 
 from dump import dump
-from harness import get_dataset
 from report import load_predictions
-from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
-from swebench_docker.run_docker import run_docker_evaluation
-from swebench_docker.utils import get_instances, get_test_directives
 
 dnames = sys.argv[1:]
 
