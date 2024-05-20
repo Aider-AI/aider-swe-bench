@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
 import lox
 from aider.coders import Coder
 from aider.io import InputOutput
@@ -165,6 +166,10 @@ def run_pre_existing_tests(entry, git_dname):
     )
     if passed:
         return
+
+    # Just keep the output after the (no-op) test patch applied
+    output = output.split(">>>>> Applied Patch (test)")[-1]
+
     return output
 
 
@@ -203,6 +208,7 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
         # verbose=True,
     )
     coder.temperature = temperature
+    coder.max_reflections = 4
 
     coder.show_announcements()
 
@@ -212,7 +218,7 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
     return coder
 
 
-def process_one_instance(entry, model, out_dname):
+def process_one_instance(entry, model, model_name_or_path, out_dname):
     oracle = False
 
     instance_id = entry["instance_id"]
@@ -272,7 +278,7 @@ def process_one_instance(entry, model, out_dname):
         result = dict(
             # Required args for running eval tests
             instance_id=instance_id,
-            model_name_or_path=out_dname.name,
+            model_name_or_path=model_name_or_path,
             model_patch=model_patch,
             # For computing stats
             cost=coder.total_cost,
@@ -349,7 +355,9 @@ def main():
     model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "aider"
+    prefix = "flake-isolated"
+
+    model_name_or_path = f"aider-{model}"
 
     model_slug = prefix + "-" + model.replace("/", "--")
     out_dname = PREDS_DNAME / model_slug
@@ -388,6 +396,7 @@ def main():
         process_one_instance_func(
             dataset[instance_id],
             model,
+            model_name_or_path,
             out_dname,
         )
 
