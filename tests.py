@@ -17,7 +17,7 @@ NOOP_PATCH = (
 )
 
 
-def run_tests(entry, model_patch=None, use_new_tests=False, 
+def run_tests(entry, model_patch=None, use_new_tests=False,
               model_name_or_path="none"):
     instance_id = entry["instance_id"]
     dump(instance_id)
@@ -55,7 +55,7 @@ def run_tests(entry, model_patch=None, use_new_tests=False,
 
     dump(log_dir)
 
-    asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, 
+    asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir,
                                       timeout, log_suffix))
 
     log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
