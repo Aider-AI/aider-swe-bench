@@ -287,7 +287,11 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
             # Tell aider to work on the `problem_statement`.
             # This is the same as if you pasted it into a fresh chat with aider
             # launched in the repo.
-            coder.run(problem_statement)
+            try:
+                coder.run(problem_statement)
+            except Exception as coder_err:
+                dump(coder_err)
+                continue
 
             # Take note of which files aider added to the chat
             added_files = coder.get_inchat_relative_files()
@@ -360,11 +364,15 @@ def check_criteria(pred, criteria):
 
 
 def pick_winner(results):
+    """
+    Given that we didn't obtain a result with all good outcomes,
+    try a series of weaker outcome sets to find the strongest result.
+    """
     priority = (
-        "model_patch edit_outcome lint_outcome",
-        "model_patch lint_outcome",
-        "model_patch edit_outcome",
-        "model_patch",
+        "model_patch edit_outcome lint_outcome",  # all good but test_outcome
+        "model_patch lint_outcome",  # a patch that lints?
+        "model_patch edit_outcome",  # a patch that had no edit errors?
+        "model_patch",  # anything with an actual patch!
     )
 
     # choose the best result available
@@ -389,8 +397,8 @@ def main():
     # model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["openrouter/deepseek/deepseek-chat"]
+    # models = ["openrouter/deepseek/deepseek-chat"]
+    models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
 
     prefix = "multi-models"
 
