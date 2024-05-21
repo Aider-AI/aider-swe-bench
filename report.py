@@ -90,7 +90,8 @@ def load_predictions(paths):
 
 
 def main():
-    predictions = load_predictions(sys.argv[1:])
+    dname = Path(sys.argv[1])
+    predictions = load_predictions([dname])
     if not predictions:
         print("No predictions")
         return
@@ -105,13 +106,15 @@ def main():
     # use the last pred to get model_name_or_path
     model_name_or_path = pred["model_name_or_path"]
     swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
-    log_dir = "logs"
+    log_dir = Path("logs") / dname.name
+    log_dir.mkdir(exist_ok=True)
+    dump(log_dir)
 
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
     if any_need_evals:
-        run_evals(swe_bench_tasks, log_dir, predictions_jsonl)
+        run_evals(swe_bench_tasks, str(log_dir), predictions_jsonl)
 
-    report = get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path)
+    report = get_report(swe_bench_tasks, str(log_dir), predictions_jsonl, model_name_or_path)
 
     if any_need_evals:
         update_pred_json(predictions, report)

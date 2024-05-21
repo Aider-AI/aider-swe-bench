@@ -315,6 +315,7 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
                 model_name_or_path=model_name_or_path,
                 model_patch=model_patch,
                 # For computing stats
+                model=model,
                 cost=coder.total_cost,
                 added_files=added_files,
                 gold_files=gold_files,
