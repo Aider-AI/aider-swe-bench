@@ -37,6 +37,11 @@ for inst in all_insts:
     #    # dump(pred)
 
 
+total_resolved = 0
 counts = Counter(resolvers)
 for who, cnt in counts.items():
     dump(who, cnt)
+    if who:
+        total_resolved += cnt
+
+dump(total_resolved)

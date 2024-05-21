@@ -175,7 +175,7 @@ def run_pre_existing_tests(entry, git_dname):
     return output
 
 
-def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle_files=None):
+def get_coder(model, git_dname, chat_history_file, test_cmd, oracle_files=None):
     """
     Get an instance of aider to work with the given LLM `model` at `temperature`
     on the code in `git_dname`. Will store the markdown chat logs in
@@ -208,7 +208,9 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
         test_cmd=test_cmd,
         # verbose=True,
     )
-    coder.temperature = temperature
+
+    # We want some variety
+    coder.temperature = 0.25
 
     # Take at most 4 steps before giving up.
     # Usually set to 5, but this reduces API costs.
@@ -223,7 +225,7 @@ def get_coder(model, temperature, git_dname, chat_history_file, test_cmd, oracle
     return coder
 
 
-def process_one_instance(entry, model, model_name_or_path, out_dname):
+def process_one_instance(entry, models, model_name_or_path, out_dname):
     """
     Process one `entry` from SWE Bench using the LLM `model`.
     Set `model_name_or_path` in the result json.
@@ -251,116 +253,83 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
 
     chat_history_file = out_dname / (instance_id + ".md")
 
-    # Boil the frog. Raise the temp until we jump out of a bad local
-    # minimum.
-    #
-    # Give aider the problem_statement and see if it comes back with a
-    # repo that was edited, linted and tested successfully. If not,
-    # raise the temperature and try again.
-    #
-    # Note: Aider is only given tests that existed at the
-    # `base_commit`. It is not given the "future" tests from the
-    # `test_patch` which determine if the issue was resolved.
-    #
     results = []
-    tries = 0
-    temperature = 0.0
     cost = 0
     winner = None
-    while tries < 3:
-        tries += 1
-        dump(tries, temperature)
+    NUM_TRIES = 3
 
-        git_tempdir = checkout_repo(entry)
-        dump(git_tempdir)
-
-        # Prepare the test command which will run the pre-existing tests
-        test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
-
-        # Get an instance of aider
-        coder = get_coder(
-            model,
-            temperature,
-            git_tempdir,
-            chat_history_file,
-            test_cmd,
-            oracle_files,
-        )
-
-        dump(instance_id)
-        dump(gold_files)
-
-        # Tell aider to work on the `problem_statement`.
-        # This is the same as if you pasted it into a fresh chat with aider
-        # launched in the repo.
-        coder.run(problem_statement)
-
-        # Take note of which files aider added to the chat
-        added_files = coder.get_inchat_relative_files()
-
-        dump(instance_id)
-        dump(gold_files)
-        dump(added_files)
-
-        # Keep track of API costs
-        cost += coder.total_cost
-
-        # Get the diff between the current state and the original commit
-        model_patch = diff_versus_commit(git_tempdir, base_commit)
-        dump(model_patch)
-
-        # Record the results for the logs
-        result = dict(
-            # Required args for running eval tests
-            instance_id=instance_id,
-            model_name_or_path=model_name_or_path,
-            model_patch=model_patch,
-            # For computing stats
-            cost=coder.total_cost,
-            temperature=temperature,
-            added_files=added_files,
-            gold_files=gold_files,
-            edited_files=files_in_patch(model_patch),
-            edit_outcome=coder.edit_outcome,
-            lint_outcome=coder.lint_outcome,
-            test_outcome=coder.test_outcome,
-        )
-        result["try"] = tries  # `try` is a python keyword
-        results.append(result)
-
-        dump(result)
-
-        # Did we get a successful edit, lint and test? If so, we're done!
-        if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
-            winner = result
+    for attempt in range(1, NUM_TRIES + 1):
+        if winner:
             break
+        for model in models:
+            if winner:
+                break
+            dump(attempt, model)
 
-        # Otherwise, raise the temperature and try again
-        temperature += 0.25
+            git_tempdir = checkout_repo(entry)
+            dump(git_tempdir)
+
+            # Prepare the test command which will run the pre-existing tests
+            test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
+
+            # Get an instance of aider
+            coder = get_coder(
+                model,
+                git_tempdir,
+                chat_history_file,
+                test_cmd,
+                oracle_files,
+            )
+
+            dump(instance_id)
+            dump(gold_files)
+
+            # Tell aider to work on the `problem_statement`.
+            # This is the same as if you pasted it into a fresh chat with aider
+            # launched in the repo.
+            coder.run(problem_statement)
+
+            # Take note of which files aider added to the chat
+            added_files = coder.get_inchat_relative_files()
+
+            dump(instance_id)
+            dump(gold_files)
+            dump(added_files)
+
+            # Keep track of API costs
+            cost += coder.total_cost
+
+            # Get the diff between the current state and the original commit
+            model_patch = diff_versus_commit(git_tempdir, base_commit)
+            dump(model_patch)
+
+            # Record the results for the logs
+            result = dict(
+                # Required args for running eval tests
+                instance_id=instance_id,
+                model_name_or_path=model_name_or_path,
+                model_patch=model_patch,
+                # For computing stats
+                cost=coder.total_cost,
+                added_files=added_files,
+                gold_files=gold_files,
+                edited_files=files_in_patch(model_patch),
+                edit_outcome=coder.edit_outcome,
+                lint_outcome=coder.lint_outcome,
+                test_outcome=coder.test_outcome,
+            )
+            result["try"] = attempt  # `try` is a python keyword
+            results.append(result)
+
+            dump(result)
+
+            # Did we get a successful edit, lint and test? If so, we're done!
+            if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
+                winner = result
 
     # If there's no clear winner, look for the most viable result we got...
-
     if not winner:
-        # Look for one that passed everything but tests
-        for res in results:
-            if res["model_patch"] and res["edit_outcome"] and res["lint_outcome"]:
-                winner = res
-                break
-    if not winner:
-        # Look for one that compiles!
-        for res in results:
-            if res["model_patch"] and res["lint_outcome"]:
-                winner = res
-                break
-    if not winner:
-        # Take anything that has a patch!!
-        for res in results:
-            if res["model_patch"]:
-                winner = res
-                break
-    if not winner:
-        # Take the first result
-        winner = results[0]
+        winner = pick_winner(results)
 
     dump(winner)
 
@@ -372,7 +341,7 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
 
     winner.update(
         dict(
-            tries=tries,
+            tries=attempt,
             all_results=results,  # Record all the results for later analysis
             cost=cost,  # total cost across all results
         )
@@ -380,6 +349,32 @@ def process_one_instance(entry, model, model_name_or_path, out_dname):
 
     out_fname = out_dname / (instance_id + ".json")
     out_fname.write_text(json.dumps(winner, indent=4))
+
+
+def check_criteria(pred, criteria):
+    attrs = criteria.split()
+    for attr in attrs:
+        if not pred[attr]:
+            return False
+    return True
+
+
+def pick_winner(results):
+    priority = (
+        "model_patch edit_outcome lint_outcome",
+        "model_patch lint_outcome",
+        "model_patch edit_outcome",
+        "model_patch",
+    )
+
+    # choose the best result available
+    for criteria in priority:
+        for res in results:
+            if check_criteria(res, criteria):
+                return res
+
+    # choose the first result as a last resort
+    return results[0]
 
 
 def main():
@@ -391,15 +386,19 @@ def main():
     # model = "gold"
 
     # model = "deepseek/deepseek-chat"
-    model = "gpt-4o"
+    # model = "gpt-4o"
     # model = "openrouter/anthropic/claude-3-opus"
 
-    prefix = "flake-isolated"
+    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
+    models = ["openrouter/deepseek/deepseek-chat"]
 
-    model_name_or_path = f"aider-{model}"
+    prefix = "multi-models"
 
-    model_slug = prefix + "-" + model.replace("/", "--")
-    out_dname = PREDS_DNAME / model_slug
+    models_slug = "--".join(model.replace("/", "-") for model in models)
+    model_name_or_path = "aider--" + models_slug
+
+    models_slug = prefix + "--" + models_slug
+    out_dname = PREDS_DNAME / models_slug
     if not out_dname.exists():
         out_dname.mkdir()
 
@@ -418,10 +417,10 @@ def main():
     all_instances = list(all_instances)
     random.shuffle(all_instances)
 
-    chat_history_dname = CHAT_LOGS_DNAME / model_slug
+    chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 10
+    THREADS = 1
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
@@ -434,7 +433,7 @@ def main():
 
         process_one_instance_func(
             dataset[instance_id],
-            model,
+            models,
             model_name_or_path,
             out_dname,
         )
