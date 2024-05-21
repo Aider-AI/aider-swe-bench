@@ -290,6 +290,7 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
             try:
                 coder.run(problem_statement)
             except Exception as coder_err:
+                # swallow any exceptions during benchmarking
                 dump(coder_err)
                 continue
 
