@@ -32,9 +32,9 @@ for inst in all_insts:
         )
     )
     resolvers.append(who_resolved)
-    if len(who_resolved) == 1:
-        pred = all_preds[dname][inst]
-        # dump(pred)
+    # if len(who_resolved) == 1:
+    #    pred = all_preds[dname][inst]
+    #    # dump(pred)
 
 
 counts = Counter(resolvers)
