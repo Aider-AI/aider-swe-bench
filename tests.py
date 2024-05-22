@@ -20,6 +20,11 @@ NOOP_PATCH = (
 )
 
 
+
+def remove_patches_to_tests_dir(model_patch):
+    # todo
+    pass
+
 def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path="none"):
     """
     Run tests for the SWE Bench `entry`, optionally applying a `model_patch` first.
@@ -48,6 +53,9 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
     else:
         test_patch = NOOP_PATCH.format(nonce="test_patch")
 
+    if model_patch and use_test_patch:
+        model_patch = remove_patches_to_tests_dir(model_patch)
+
     entry_instance = {
         "repo": entry["repo"],
         "version": entry["version"],
@@ -71,7 +79,7 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
 
     log_text = log_fname.read_text()
     log_lines = log_text.splitlines()
-    log_lines = [line for line in log_lines if line.startswith(">>>>")]
+    #log_lines = [line for line in log_lines if line.startswith(">>>>")]
     print("\n".join(log_lines))
 
     passed = ">>>>> All Tests Passed" in log_text
@@ -81,25 +89,29 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
 
 def main():
     from harness import get_dataset
+    from report import load_predictions
 
     dataset = get_dataset()
 
+    dnames = sys.argv[1:]
+    preds = load_predictions(dnames)
+
     num = 0
     num_passed = 0
+    for instance_id,pred in preds.items():
+        entry = dataset[instance_id]
 
-    instance_ids = sys.argv[1:]
-
-    for entry in dataset.values():
-        if instance_ids and entry["instance_id"] not in instance_ids:
-            continue
-
-        passed, test_text = run_tests(entry)
+        passed, test_text = run_tests(
+            entry,
+            model_patch=pred['model_patch'],
+            use_test_patch=True,
+        )
 
         num += 1
         if passed:
             num_passed += 1
 
-        dump(num_passed / num)
+        dump(num_passed, num)
 
 
 if __name__ == "__main__":
