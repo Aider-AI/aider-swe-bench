@@ -13,7 +13,7 @@ from swebench.metrics.report import get_model_report
 
 from dump import dump
 from harness import get_dataset
-from tests import run_tests
+from tests import remove_patches_to_tests, run_tests
 
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
@@ -25,6 +25,7 @@ python {base}/SWE-bench-docker/run_evaluation.py
     --swe_bench_tasks {base}/{swe_bench_tasks}
     --skip_existing
     --predictions_path {predictions_jsonl}
+    --num_processes 5
 """
     run_evals_cmd = " ".join([line.strip() for line in run_evals_cmd.split() if line.strip()])
     subprocess.run(run_evals_cmd.split(), check=True)
@@ -49,8 +50,15 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     generated = set(report["generated"])
     applied = set(report["applied"])
-    missing = generated - applied
-    dump(missing)
+    generated_minus_applied = generated - applied
+    dump(len(generated_minus_applied))
+    generated_minus_applied = " ".join(iid + "*" for iid in sorted(generated_minus_applied))
+    dump(generated_minus_applied)
+
+    no_apply = set(report["no_apply"])
+    dump(len(no_apply))
+    no_apply = " ".join(iid + "*" for iid in sorted(no_apply))
+    dump(no_apply)
 
     return report
 
@@ -106,6 +114,10 @@ def main():
     predictions_jsonl = tempfile.NamedTemporaryFile(suffix=".jsonl").name
     with open(predictions_jsonl, "w") as fh:
         for inst, pred in predictions.items():
+            # Make sure the model_patch does not disturb the repo's tests
+            # when doing acceptance testing with the `test_patch`.
+            pred = dict(pred)
+            pred["model_patch"] = remove_patches_to_tests(pred["model_patch"])
             fh.write(json.dumps(pred) + "\n")
 
     # use the last pred to get model_name_or_path
@@ -141,6 +153,16 @@ def main():
         print(f"{plus_one_percent= :.1f}%")
 
     print()
+
+    """
+    for iid in report['resolved']:
+        logs = list(log_dir.glob(f"{iid}.*log"))
+        assert len(logs) == 1, logs
+        log = logs[0]
+        text = log.read_text()
+        if 'All Tests Passed' not in text:
+            print(log)
+    """
 
     # NEED TO BE RUN?
     need_to_be_run = missing_logs - counts["no_generation"]

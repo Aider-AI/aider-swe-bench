@@ -20,10 +20,31 @@ NOOP_PATCH = (
 )
 
 
+def remove_patches_to_tests(model_patch):
+    """
+    Remove any changes to the tests directory from the provided patch.
+    This is to ensure that the model_patch does not disturb the repo's
+    tests when doing acceptance testing with the `test_patch`.
+    """
+    lines = model_patch.splitlines(keepends=True)
+    filtered_lines = []
+    is_tests = False
 
-def remove_patches_to_tests_dir(model_patch):
-    # todo
-    pass
+    for line in lines:
+        if line.startswith("diff --git a/"):
+            pieces = line.split()
+            to = pieces[-1]
+            assert to.startswith("b/"), to
+            if "/tests/" in to or "/testing/" in to or "/test_" in to or "/tox.ini" in to:
+                is_tests = True
+            else:
+                is_tests = False
+
+        if not is_tests:
+            filtered_lines.append(line)
+
+    return "".join(filtered_lines)
+
 
 def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path="none"):
     """
@@ -54,7 +75,14 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
         test_patch = NOOP_PATCH.format(nonce="test_patch")
 
     if model_patch and use_test_patch:
-        model_patch = remove_patches_to_tests_dir(model_patch)
+        # Make sure the model_patch does not disturb the repo's tests
+        # when doing acceptance testing with the `test_patch`.
+        print("=" * 30)
+        print(model_patch)
+        model_patch = remove_patches_to_tests(model_patch)
+        print("=" * 30)
+        print(model_patch)
+        print("=" * 30)
 
     entry_instance = {
         "repo": entry["repo"],
@@ -79,7 +107,7 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
 
     log_text = log_fname.read_text()
     log_lines = log_text.splitlines()
-    #log_lines = [line for line in log_lines if line.startswith(">>>>")]
+    log_lines = [line for line in log_lines if line.startswith(">>>>")]
     print("\n".join(log_lines))
 
     passed = ">>>>> All Tests Passed" in log_text
@@ -98,12 +126,12 @@ def main():
 
     num = 0
     num_passed = 0
-    for instance_id,pred in preds.items():
+    for instance_id, pred in preds.items():
         entry = dataset[instance_id]
 
         passed, test_text = run_tests(
             entry,
-            model_patch=pred['model_patch'],
+            model_patch=pred["model_patch"],
             use_test_patch=True,
         )
 
