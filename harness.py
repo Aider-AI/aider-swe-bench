@@ -259,11 +259,7 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
     NUM_TRIES = 3
 
     for attempt in range(1, NUM_TRIES + 1):
-        if winner:
-            break
         for model in models:
-            if winner:
-                break
             dump(attempt, model)
 
             git_tempdir = checkout_repo(entry)
@@ -332,6 +328,10 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
             # Did we get a successful edit, lint and test? If so, we're done!
             if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
                 winner = result
+
+        # also break out of the attempts loop
+        if winner:
+            break
 
     # If there's no clear winner, look for the most viable result we got...
     if not winner:
@@ -430,7 +430,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 1
+    THREADS = 10
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
@@ -452,7 +452,7 @@ def main():
         # input()
 
     if THREADS > 1:
-        process_one_instance.gather()
+        process_one_instance_func.gather()
 
 
 if __name__ == "__main__":

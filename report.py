@@ -47,6 +47,11 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     # dump(report)
 
+    generated = set(report["generated"])
+    applied = set(report["applied"])
+    missing = generated - applied
+    dump(missing)
+
     return report
 
 
@@ -111,6 +116,7 @@ def main():
     dump(log_dir)
 
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
+    any_need_evals = True
     if any_need_evals:
         run_evals(swe_bench_tasks, str(log_dir), predictions_jsonl)
 
