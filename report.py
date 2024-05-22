@@ -5,7 +5,6 @@ import os
 import random
 import subprocess
 import sys
-import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -68,12 +67,13 @@ def update_pred_json(predictions, report):
     all_instances.update(set(report.get("no_generation", [])))
 
     for instance_id, pred in predictions.items():
-        if "resolved" in pred:
+        was_resolved = instance_id in report["resolved"]
+        if "resolved" in pred and pred["resolved"] == was_resolved:
             continue
 
         assert instance_id in all_instances, instance_id
 
-        pred["resolved"] = instance_id in report["resolved"]
+        pred["resolved"] = was_resolved
         save = dict(pred)
         del save["json_fname"]
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
@@ -111,14 +111,18 @@ def main():
 
     dump(len(predictions))
 
-    predictions_jsonl = tempfile.NamedTemporaryFile(suffix=".jsonl").name
+    predictions_jsonl = str(dname / "predictions.jsonl")
+    dump(predictions_jsonl)
     with open(predictions_jsonl, "w") as fh:
         for inst, pred in predictions.items():
             # Make sure the model_patch does not disturb the repo's tests
             # when doing acceptance testing with the `test_patch`.
-            pred = dict(pred)
-            pred["model_patch"] = remove_patches_to_tests(pred["model_patch"])
-            fh.write(json.dumps(pred) + "\n")
+            minimal_pred = dict(
+                model_name_or_path=pred["model_name_or_path"],
+                model_patch=remove_patches_to_tests(pred["model_patch"]),
+                instance_id=pred["instance_id"],
+            )
+            fh.write(json.dumps(minimal_pred) + "\n")
 
     # use the last pred to get model_name_or_path
     model_name_or_path = pred["model_name_or_path"]
