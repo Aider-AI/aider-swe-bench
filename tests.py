@@ -34,8 +34,9 @@ def remove_patches_to_tests(model_patch):
         if line.startswith("diff --git a/"):
             pieces = line.split()
             to = pieces[-1]
-            assert to.startswith("b/"), to
-            if "/tests/" in to or "/testing/" in to or "/test_" in to or "/tox.ini" in to:
+            if to.startswith("b/") and (
+                "/tests/" in to or "/testing/" in to or "/test_" in to or "/tox.ini" in to
+            ):
                 is_tests = True
             else:
                 is_tests = False

@@ -111,7 +111,7 @@ def main():
 
     dump(len(predictions))
 
-    predictions_jsonl = str(dname / "predictions.jsonl")
+    predictions_jsonl = str(dname / "all_preds.jsonl")
     dump(predictions_jsonl)
     with open(predictions_jsonl, "w") as fh:
         for inst, pred in predictions.items():
@@ -137,6 +137,9 @@ def main():
         run_evals(swe_bench_tasks, str(log_dir), predictions_jsonl)
 
     report = get_report(swe_bench_tasks, str(log_dir), predictions_jsonl, model_name_or_path)
+
+    results_json = dname / "results.json"
+    results_json.write_text(json.dumps(report, indent=4))
 
     if any_need_evals:
         update_pred_json(predictions, report)
