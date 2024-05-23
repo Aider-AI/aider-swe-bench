@@ -95,6 +95,10 @@ def load_predictions(paths):
     predictions = dict()
     for fname in prediction_paths:
         pred = json.loads(fname.read_text())
+        if "instance_id" not in pred:
+            print("Skipping json without instance_id", fname)
+            continue
+
         inst = pred["instance_id"]
         pred["json_fname"] = str(fname)
         predictions[inst] = pred
