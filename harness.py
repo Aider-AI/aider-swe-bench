@@ -96,7 +96,8 @@ def checkout_repo_url_commit(url, commit, dname):
     return repo_dname
 
 
-DATASET = "princeton-nlp/SWE-bench_Lite"
+#DATASET = "princeton-nlp/SWE-bench_Lite"
+DATASET = "princeton-nlp/SWE-bench"
 DATASET_JSON = DATASET.replace("/", "--") + ".json"
 
 
@@ -400,10 +401,10 @@ def main():
     # model = "openrouter/anthropic/claude-3-opus"
 
     # models = ["openrouter/deepseek/deepseek-chat"]
-    models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
+    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
+    models = ["gpt-4o"]
 
-    prefix = "multi-models"
+    prefix = "full-"
 
     models_slug = "--".join(model.replace("/", "-") for model in models)
     model_name_or_path = "aider--" + models_slug
@@ -438,7 +439,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 10
+    THREADS = 1
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
