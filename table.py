@@ -1,22 +1,11 @@
 #!/usr/bin/env python
 
-import asyncio
-import json
-import py_compile
 import random
-import subprocess
 import sys
-import tempfile
-import traceback
 from collections import Counter, defaultdict
-from pathlib import Path
 
 from dump import dump
-from harness import checkout_repo, files_in_patch, get_dataset
 from report import load_predictions
-from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
-from swebench_docker.run_docker import run_docker_evaluation
-from swebench_docker.utils import get_instances, get_test_directives
 
 dnames = sys.argv[1:]
 preds = load_predictions(dnames)
