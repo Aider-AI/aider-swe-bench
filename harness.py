@@ -401,13 +401,19 @@ def main():
 
     # models = ["openrouter/deepseek/deepseek-chat"]
     models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
 
     prefix = "multi-models"
 
     models_slug = "--".join(model.replace("/", "-") for model in models)
     model_name_or_path = "aider--" + models_slug
-
     models_slug = prefix + "--" + models_slug
+
+    ###
+    # models = ["gpt-4o"]
+    # models_slug = "flake-isolated-gpt-4o"
+    # model_name_or_path = "aider-gpt-4o"
+
     out_dname = PREDS_DNAME / models_slug
     if not out_dname.exists():
         out_dname.mkdir()
@@ -418,14 +424,16 @@ def main():
         if not text:
             continue
         rec = json.loads(fname.read_text())
-        done_instances.add(rec["instance_id"])
+        if "instance_id" in rec:
+            done_instances.add(rec["instance_id"])
 
     all_instances = [Path(fn).with_suffix("").name for fn in sys.argv[1:]]
     if not all_instances:
         all_instances = dataset.keys()
 
-    all_instances = list(all_instances)
-    random.shuffle(all_instances)
+    remaining_instances = set(all_instances) - set(done_instances)
+    remaining_instances = list(remaining_instances)
+    random.shuffle(remaining_instances)
 
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
@@ -436,7 +444,7 @@ def main():
     else:
         process_one_instance_func = process_one_instance
 
-    for instance_id in all_instances:
+    for instance_id in remaining_instances:
         if instance_id in done_instances:
             print("skipping", instance_id)
             continue
