@@ -300,6 +300,14 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
     if not winner:
         winner = pick_winner(results)
 
+    if not winner:
+        result = dict(
+            # Required args for running eval tests
+            instance_id=instance_id,
+            model_name_or_path=model_name_or_path,
+            model_patch=None,
+        )
+
     dump(winner)
 
     print("\n\nFinal diff:\n")
@@ -347,7 +355,8 @@ def pick_winner(results):
                 return res
 
     # choose the first result as a last resort
-    return results[0]
+    if results:
+        return results[0]
 
 
 def main():
