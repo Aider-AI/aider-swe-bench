@@ -11,9 +11,15 @@ from pathlib import Path
 
 from swebench.metrics.report import get_model_report
 
-from dump import dump
+from dump import dump  # noqa: F401
 from tests import remove_patches_to_tests, run_tests
-from utils import DATASET_FNAME, get_dataset, get_plausible, load_predictions
+from utils import (
+    DATASET_FNAME,
+    get_dataset,
+    get_plausible,
+    load_predictions,
+    pick_winner,
+)
 
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
@@ -80,7 +86,42 @@ def update_pred_json(predictions, report):
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
 
 
+def choose_pred(inst, all_preds, dnames):
+    results = []
+    for i in range(len(all_preds)):
+        preds = all_preds[i]
+        dname = dnames[i]
+
+        if inst not in preds:
+            continue
+        pred = dict(preds[inst])
+        pred["dname"] = Path(dname).name
+        results.append(pred)
+
+    return pick_winner(results)
+
+
 def choose_predictions(dnames, model_name_or_path):
+    all_preds = [load_predictions([dname]) for dname in dnames]
+    all_instances = set()
+    for preds in all_preds:
+        all_instances.update(preds.keys())
+
+    chosen = dict()
+    for inst in all_instances:
+        res = choose_pred(inst, all_preds, dnames)
+        chosen[inst] = res
+
+    for inst in chosen:
+        pred = dict(chosen[inst])
+        pred["model_name_or_path"] = model_name_or_path
+        chosen[inst] = pred
+
+    dump(len(chosen))
+    return chosen
+
+
+def _choose_predictions(dnames, model_name_or_path):
     num_dnames = len(dnames)
 
     all_preds = [load_predictions([dname]) for dname in dnames]
@@ -166,6 +207,7 @@ def run_evals_on_dname(dname):
     dname = Path(dname)
 
     predictions = load_predictions([dname])
+
     predictions_jsonl = preds_to_jsonl(dname, predictions)
 
     log_dir = Path("logs") / dname.name
@@ -205,7 +247,7 @@ def combine_jsonl_logs(predictions, model_name_or_path):
         from_fname = from_fname[0]
         # dump(from_fname)
 
-        to_fname = log_dir / f"{inst}.{model_name_or_path}.log"
+        to_fname = log_dir / f"{inst}.{model_name_or_path}.eval.log"
         # dump(from_fname, to_fname)
         shutil.copyfile(from_fname, to_fname)
 
@@ -229,7 +271,7 @@ def main():
 
     predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
     report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
-    results_json = log_dir / "results.json"
+    results_json = Path("predictions") / model_name_or_path / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
 
     counts = defaultdict(int, [(k, len(v)) for k, v in report.items()])

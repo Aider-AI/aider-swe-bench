@@ -14,7 +14,13 @@ from aider.models import Model
 
 from dump import dump
 from tests import run_tests
-from utils import get_dataset, get_plausible, load_predictions
+from utils import (
+    get_dataset,
+    get_devin_instance_ids,
+    get_plausible,
+    load_predictions,
+    pick_winner,
+)
 
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -184,7 +190,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
     return coder
 
 
-def process_one_instance(entry, models, model_name_or_path, out_dname):
+def process_one_instance(entry, models, temperature, model_name_or_path, out_dname):
     """
     Process one `entry` from SWE Bench using the LLM `model`.
     Set `model_name_or_path` in the result json.
@@ -211,8 +217,6 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
     ###
 
     chat_history_file = out_dname / (instance_id + ".md")
-
-    temperature = 0
 
     results = []
     cost = 0
@@ -328,37 +332,6 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
     out_fname.write_text(json.dumps(winner, indent=4))
 
 
-def check_criteria(pred, criteria):
-    attrs = criteria.split()
-    for attr in attrs:
-        if not pred[attr]:
-            return False
-    return True
-
-
-def pick_winner(results):
-    """
-    Given that we didn't obtain a result with all good outcomes,
-    try a series of weaker outcome sets to find the strongest result.
-    """
-    priority = (
-        "model_patch edit_outcome lint_outcome",  # all good but test_outcome
-        "model_patch lint_outcome",  # a patch that lints?
-        "model_patch edit_outcome",  # a patch that had no edit errors?
-        "model_patch",  # anything with an actual patch!
-    )
-
-    # choose the best result available
-    for criteria in priority:
-        for res in results:
-            if check_criteria(res, criteria):
-                return res
-
-    # choose the first result as a last resort
-    if results:
-        return results[0]
-
-
 def main():
     dataset = get_dataset()
 
@@ -373,14 +346,21 @@ def main():
 
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
+    # models = ["openrouter/anthropic/claude-3-opus"]
+    models = ["gpt-4o"]
+    # models = ["gpt-4-1106-preview"]
 
     prefix = "full-"
+    # prefix = "full025-"
 
     models_slug = "--".join(model.replace("/", "-") for model in models)
     model_name_or_path = "aider--" + models_slug
     models_slug = prefix + "--" + models_slug
+
+    temperature = 0
+
+    dump(models)
+    dump(temperature)
 
     ###
     # models = ["gpt-4o"]
@@ -411,6 +391,10 @@ def main():
         all_instances = set(dataset.keys())
 
     remaining_instances = set(all_instances)
+
+    devin_insts = get_devin_instance_ids()
+    remaining_instances = remaining_instances.intersection(devin_insts)
+
     remaining_instances -= done_instances
     remaining_instances -= plausible_instances
 
@@ -443,6 +427,7 @@ def main():
         process_one_instance_func(
             dataset[instance_id],
             models,
+            temperature,
             model_name_or_path,
             out_dname,
         )
