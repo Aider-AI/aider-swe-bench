@@ -11,10 +11,10 @@ import lox
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model
-from datasets import load_dataset
 
 from dump import dump
 from tests import run_tests
+from utils import get_dataset, get_plausible, load_predictions
 
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -94,46 +94,6 @@ def checkout_repo_url_commit(url, commit, dname):
     # ignore.write_text(IGNORE)
 
     return repo_dname
-
-
-# DATASET = "princeton-nlp/SWE-bench_Lite"
-DATASET = "princeton-nlp/SWE-bench"
-DATASET_JSON = DATASET.replace("/", "--") + ".json"
-
-
-def get_dataset():
-    """
-    Load the `DATASET` from hugging face, and turn it into a dict
-    keyed on `instance_id`.
-    Cache the dict locally in a json file.
-    """
-
-    fname = Path(DATASET_JSON)
-    if fname.exists():
-        dataset = json.loads(fname.read_text())
-    else:
-        dataset = load_dataset(DATASET)
-        dataset = dataset["test"]
-        dump_dataset(dataset)
-
-    res = dict()
-    for entry in dataset:
-        res[entry["instance_id"]] = entry
-
-    return res
-
-
-def dump_dataset(dataset):
-    """
-    Save the dataset to json.
-    """
-    entries = list(dataset)
-    for entry in entries:
-        entry["FAIL_TO_PASS"] = json.loads(entry["FAIL_TO_PASS"])
-        entry["PASS_TO_PASS"] = json.loads(entry["PASS_TO_PASS"])
-
-    with open(DATASET_JSON, "w") as f:
-        json.dump(entries, f, indent=4)
 
 
 def show_problems(dataset):
@@ -404,7 +364,8 @@ def main():
 
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["gpt-4o"]
+    models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
 
     prefix = "full-"
 
@@ -421,31 +382,49 @@ def main():
     if not out_dname.exists():
         out_dname.mkdir()
 
-    done_instances = set()
-    for fname in out_dname.glob("*.json"):
-        text = fname.read_text()
-        if not text:
-            continue
-        rec = json.loads(fname.read_text())
-        if "instance_id" in rec:
-            done_instances.add(rec["instance_id"])
+    dump(out_dname)
 
-    all_instances = [Path(fn).with_suffix("").name for fn in sys.argv[1:]]
-    if not all_instances:
-        all_instances = dataset.keys()
+    done_preds = load_predictions([out_dname])
+    done_instances = set(done_preds.keys())
+    dump(len(done_instances))
 
-    remaining_instances = set(all_instances) - set(done_instances)
+    prior_dnames = sys.argv[1:]
+    dump(prior_dnames)
+    prior_preds = load_predictions(prior_dnames)
+    dump(len(prior_preds))
+
+    plausible_instances = get_plausible(prior_preds)
+    dump(len(plausible_instances))
+
+    if prior_preds:
+        all_instances = set(prior_preds.keys())
+    else:
+        all_instances = set(dataset.keys())
+
+    remaining_instances = set(all_instances)
+    remaining_instances -= done_instances
+    remaining_instances -= plausible_instances
+
     remaining_instances = list(remaining_instances)
     random.shuffle(remaining_instances)
+
+    dump(len(remaining_instances))
+
+    print()
+    print("press enter...")
+    input()
 
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 3
+    THREADS = 10
     if THREADS > 1:
-        process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
+        process_one_instance_lox = lox.thread(THREADS)(process_one_instance)
+        process_one_instance_func = process_one_instance_lox.scatter
+        gather = process_one_instance_lox.gather
     else:
         process_one_instance_func = process_one_instance
+        gather = lambda: None  # noqa: E731
 
     for instance_id in remaining_instances:
         if instance_id in done_instances:
@@ -463,7 +442,7 @@ def main():
         # input()
 
     if THREADS > 1:
-        process_one_instance.gather()
+        gather()
 
 
 if __name__ == "__main__":

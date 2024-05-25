@@ -11,8 +11,8 @@ from pathlib import Path
 from swebench.metrics.report import get_model_report
 
 from dump import dump
-from harness import get_dataset
 from tests import remove_patches_to_tests, run_tests
+from utils import DATASET_FNAME, get_dataset, get_plausible, load_predictions
 
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
@@ -79,41 +79,66 @@ def update_pred_json(predictions, report):
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
 
 
-def load_predictions(paths):
-    prediction_paths = []
-    for path in paths:
-        path = Path(path)
-        if path.is_file():
-            prediction_paths.append(path)
-        elif path.is_dir():
-            prediction_paths += list(path.glob("*.json"))
-        else:
-            assert False, path
+def choose_predictions(dnames):
+    num_dnames = len(dnames)
 
-    prediction_paths.sort(key=lambda p: p.stat().st_mtime)
+    all_preds = [load_predictions([dname]) for dname in dnames]
 
-    predictions = dict()
-    for fname in prediction_paths:
-        pred = json.loads(fname.read_text())
-        if "instance_id" not in pred:
-            print("Skipping json without instance_id", fname)
+    all_plausible = [get_plausible(preds) for preds in all_preds]
+
+    all_instances = set()
+    for preds in all_preds:
+        all_instances.update(preds.keys())
+
+    dump(len(all_instances))
+    for i in range(len(all_preds)):
+        plausible_insts = all_plausible[i]
+        preds = all_preds[i]
+        dname = dnames[i]
+        dump(i, dname)
+        dump(len(plausible_insts))
+        dump(len(preds))
+
+    chosen = dict()
+    for inst in all_instances:
+        for i in range(num_dnames):
+            plausible_insts = all_plausible[i]
+            preds = all_preds[i]
+            dname = dnames[i]
+
+            if inst in plausible_insts:
+                dump(dname, inst)
+                chosen[inst] = preds[inst]
+                break
+
+        if inst in chosen:
             continue
 
-        inst = pred["instance_id"]
-        pred["json_fname"] = str(fname)
-        predictions[inst] = pred
+        for i in range(len(all_preds)):
+            preds = all_preds[i]
+            dname = dnames[i]
 
-    return predictions
+            if inst in preds and preds[inst]["model_patch"]:
+                dump(dname, inst, "not plausible")
+                chosen[inst] = preds[inst]
+                break
+
+    return chosen
 
 
 def main():
-    dname = Path(sys.argv[1])
-    predictions = load_predictions([dname])
+    dnames = sys.argv[1:]
+
+    predictions = choose_predictions(dnames)
     if not predictions:
         print("No predictions")
         return
 
     dump(len(predictions))
+
+    # where to output jsonl and report.json and name for log_dir
+    dname = Path(dnames[-1])
+    model_name_or_path = dname.name.split("-")[0]
 
     predictions_jsonl = str(dname / "all_preds.jsonl")
     dump(predictions_jsonl)
@@ -122,26 +147,22 @@ def main():
             # Make sure the model_patch does not disturb the repo's tests
             # when doing acceptance testing with the `test_patch`.
             minimal_pred = dict(
-                model_name_or_path=pred["model_name_or_path"],
+                model_name_or_path=model_name_or_path,
                 model_patch=remove_patches_to_tests(pred["model_patch"]),
                 instance_id=pred["instance_id"],
             )
             fh.write(json.dumps(minimal_pred) + "\n")
 
-    # use the last pred to get model_name_or_path
-    model_name_or_path = pred["model_name_or_path"]
-    # swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
-    swe_bench_tasks = "princeton-nlp--SWE-bench.json"
-    log_dir = Path("logs") / dname.name
+    log_dir = Path("logs") / model_name_or_path
     log_dir.mkdir(exist_ok=True)
     dump(log_dir)
 
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
-    # any_need_evals = True
+    any_need_evals = True
     if any_need_evals:
-        run_evals(swe_bench_tasks, str(log_dir), predictions_jsonl)
+        run_evals(DATASET_FNAME, str(log_dir), predictions_jsonl)
 
-    report = get_report(swe_bench_tasks, str(log_dir), predictions_jsonl, model_name_or_path)
+    report = get_report(DATASET_FNAME, str(log_dir), predictions_jsonl, model_name_or_path)
 
     results_json = dname / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
@@ -204,7 +225,7 @@ def main():
         spent = sum(costs)
         print(f"spent: ${spent:.2f}")
 
-        num_instances = len(json.load(open(swe_bench_tasks)))
+        num_instances = len(json.load(open(DATASET_FNAME)))
         expected_cost = num_instances * avg_cost
         print(f"expected_cost: ${expected_cost:.2f}")
 
@@ -277,6 +298,7 @@ def main():
         pct_added = total_added_gold / total_with_gold_attr * 100
         print(f"pct_added_gold: {pct_added:.1f}%")
 
+    if total_added_gold:
         pct_added_gold_resolved = gold_resolved / total_added_gold * 100
         print(f"pct_added_gold_resolved: {pct_added_gold_resolved:.1f}%")
 

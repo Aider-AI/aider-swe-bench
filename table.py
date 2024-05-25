@@ -65,7 +65,7 @@ for key, count_p in sorted(counts_proposed.items()):
     print(
         f"| {num} | {model:20} | {count_p:3d} | {pct_p:4.1f}% | {count_r:2d} | {pct_r:4.1f}% |"
         f" {pct_of_all:4.1f}% |"
-        # f" {pct_r_of_p:4.1f}%"
+        f" {pct_r_of_p:4.1f}%"
     )
 
 pct_of_all = num_resolved / 3
