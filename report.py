@@ -3,6 +3,7 @@
 import json
 import os
 import random
+import shutil
 import subprocess
 import sys
 from collections import defaultdict
@@ -79,7 +80,7 @@ def update_pred_json(predictions, report):
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
 
 
-def choose_predictions(dnames):
+def choose_predictions(dnames, model_name_or_path):
     num_dnames = len(dnames)
 
     all_preds = [load_predictions([dname]) for dname in dnames]
@@ -104,11 +105,11 @@ def choose_predictions(dnames):
         for i in range(num_dnames):
             plausible_insts = all_plausible[i]
             preds = all_preds[i]
-            dname = dnames[i]
+            dname = Path(dnames[i])
 
             if inst in plausible_insts:
-                dump(dname, inst)
                 chosen[inst] = preds[inst]
+                chosen[inst]["dname"] = dname.name
                 break
 
         if inst in chosen:
@@ -116,44 +117,58 @@ def choose_predictions(dnames):
 
         for i in range(len(all_preds)):
             preds = all_preds[i]
-            dname = dnames[i]
+            dname = Path(dnames[i])
 
             if inst in preds and preds[inst]["model_patch"]:
-                dump(dname, inst, "not plausible")
                 chosen[inst] = preds[inst]
+                chosen[inst]["dname"] = dname.name
                 break
 
+        if inst in chosen:
+            continue
+
+        for i in range(len(all_preds)):
+            preds = all_preds[i]
+            dname = Path(dnames[i])
+
+            if inst in preds:
+                chosen[inst] = preds[inst]
+                chosen[inst]["dname"] = dname.name
+
+    for inst in chosen:
+        pred = dict(chosen[inst])
+        pred["model_name_or_path"] = model_name_or_path
+        chosen[inst] = pred
+
+    dump(len(chosen))
     return chosen
 
 
-def main():
-    dnames = sys.argv[1:]
-
-    predictions = choose_predictions(dnames)
-    if not predictions:
-        print("No predictions")
-        return
-
-    dump(len(predictions))
-
-    # where to output jsonl and report.json and name for log_dir
-    dname = Path(dnames[-1])
-    model_name_or_path = dname.name.split("-")[0]
+def preds_to_jsonl(dname, predictions):
+    dname = Path(dname)
 
     predictions_jsonl = str(dname / "all_preds.jsonl")
     dump(predictions_jsonl)
+    model_name_or_path = list(predictions.values())[0]["model_name_or_path"]
     with open(predictions_jsonl, "w") as fh:
         for inst, pred in predictions.items():
-            # Make sure the model_patch does not disturb the repo's tests
-            # when doing acceptance testing with the `test_patch`.
+            assert model_name_or_path == pred["model_name_or_path"]
             minimal_pred = dict(
                 model_name_or_path=model_name_or_path,
                 model_patch=remove_patches_to_tests(pred["model_patch"]),
                 instance_id=pred["instance_id"],
             )
             fh.write(json.dumps(minimal_pred) + "\n")
+    return predictions_jsonl
 
-    log_dir = Path("logs") / model_name_or_path
+
+def run_evals_on_dname(dname):
+    dname = Path(dname)
+
+    predictions = load_predictions([dname])
+    predictions_jsonl = preds_to_jsonl(dname, predictions)
+
+    log_dir = Path("logs") / dname.name
     log_dir.mkdir(exist_ok=True)
     dump(log_dir)
 
@@ -162,13 +177,60 @@ def main():
     if any_need_evals:
         run_evals(DATASET_FNAME, str(log_dir), predictions_jsonl)
 
-    report = get_report(DATASET_FNAME, str(log_dir), predictions_jsonl, model_name_or_path)
-
-    results_json = dname / "results.json"
-    results_json.write_text(json.dumps(report, indent=4))
-
-    if any_need_evals:
+        model_name_or_path = list(predictions.values())[0]["model_name_or_path"]
+        report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
         update_pred_json(predictions, report)
+
+    return predictions_jsonl, log_dir
+
+
+def combine_jsonl_logs(predictions, model_name_or_path):
+    logs = Path("logs")
+    log_dir = logs / model_name_or_path
+    log_dir.mkdir(exist_ok=True)
+    dump(log_dir)
+
+    preds_dir = Path("predictions") / model_name_or_path
+    preds_dir.mkdir(exist_ok=True)
+
+    predictions_jsonl = preds_to_jsonl(preds_dir, predictions)
+    for inst, pred in predictions.items():
+        from_fname = logs / pred["dname"]
+        # dump(from_fname, inst)
+        from_fname = list(from_fname.glob(f"{inst}.*.log"))
+        assert len(from_fname) <= 1, from_fname
+        if not len(from_fname):
+            print("Missing", pred["dname"], inst)
+            continue
+        from_fname = from_fname[0]
+        # dump(from_fname)
+
+        to_fname = log_dir / f"{inst}.{model_name_or_path}.log"
+        # dump(from_fname, to_fname)
+        shutil.copyfile(from_fname, to_fname)
+
+    return predictions_jsonl, log_dir
+
+
+def main():
+    dnames = sys.argv[1:]
+
+    for dname in dnames:
+        dump(dname)
+        run_evals_on_dname(dname)
+
+    model_name_or_path = "full"
+    predictions = choose_predictions(dnames, model_name_or_path)
+    if not predictions:
+        print("No predictions")
+        return
+
+    dump(len(predictions))
+
+    predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
+    report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
+    results_json = log_dir / "results.json"
+    results_json.write_text(json.dumps(report, indent=4))
 
     counts = defaultdict(int, [(k, len(v)) for k, v in report.items()])
     dump(counts)
