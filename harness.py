@@ -96,7 +96,7 @@ def checkout_repo_url_commit(url, commit, dname):
     return repo_dname
 
 
-#DATASET = "princeton-nlp/SWE-bench_Lite"
+# DATASET = "princeton-nlp/SWE-bench_Lite"
 DATASET = "princeton-nlp/SWE-bench"
 DATASET_JSON = DATASET.replace("/", "--") + ".json"
 
@@ -176,7 +176,7 @@ def run_pre_existing_tests(entry, git_dname):
     return output
 
 
-def get_coder(model, git_dname, chat_history_file, test_cmd, oracle_files=None):
+def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle_files=None):
     """
     Get an instance of aider to work with the given LLM `model` at `temperature`
     on the code in `git_dname`. Will store the markdown chat logs in
@@ -209,9 +209,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, oracle_files=None):
         test_cmd=test_cmd,
         # verbose=True,
     )
-
-    # We want some variety
-    coder.temperature = 0.25
+    coder.temperature = temperature
 
     # Take at most 4 steps before giving up.
     # Usually set to 5, but this reduces API costs.
@@ -254,10 +252,12 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
 
     chat_history_file = out_dname / (instance_id + ".md")
 
+    temperature = 0
+
     results = []
     cost = 0
     winner = None
-    NUM_TRIES = 3
+    NUM_TRIES = 1
 
     for attempt in range(1, NUM_TRIES + 1):
         for model in models:
@@ -275,6 +275,7 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
                 git_tempdir,
                 chat_history_file,
                 test_cmd,
+                temperature,
                 oracle_files,
             )
 
@@ -313,6 +314,7 @@ def process_one_instance(entry, models, model_name_or_path, out_dname):
                 model_patch=model_patch,
                 # For computing stats
                 model=model,
+                temperature=temperature,
                 cost=coder.total_cost,
                 added_files=added_files,
                 gold_files=gold_files,
@@ -439,7 +441,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 1
+    THREADS = 3
     if THREADS > 1:
         process_one_instance_func = lox.thread(THREADS)(process_one_instance).scatter
     else:
@@ -461,7 +463,7 @@ def main():
         # input()
 
     if THREADS > 1:
-        process_one_instance_func.gather()
+        process_one_instance.gather()
 
 
 if __name__ == "__main__":

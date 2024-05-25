@@ -130,7 +130,8 @@ def main():
 
     # use the last pred to get model_name_or_path
     model_name_or_path = pred["model_name_or_path"]
-    swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
+    # swe_bench_tasks = "princeton-nlp--SWE-bench_Lite.json"
+    swe_bench_tasks = "princeton-nlp--SWE-bench.json"
     log_dir = Path("logs") / dname.name
     log_dir.mkdir(exist_ok=True)
     dump(log_dir)
@@ -211,6 +212,9 @@ def main():
 
     # added gold files?
 
+    total_plausible = 0
+    resolved_plausible = 0
+
     total_with_gold_attr = 0
     total_added_gold = 0
     gold_resolved = 0
@@ -224,6 +228,17 @@ def main():
 
         resolved = data["resolved"]
         added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
+
+        plausible = (
+            data["model_patch"]
+            and data["edit_outcome"]
+            and data["lint_outcome"]
+            and data["test_outcome"]
+        )
+        if plausible:
+            total_plausible += 1
+            if resolved:
+                resolved_plausible += 1
 
         if added_files:
             added_timeline += str(len(added_files))
@@ -267,9 +282,17 @@ def main():
 
         print()
 
-    print(timeline)
-    print(added_timeline)
-    print(repomap_timeline)
+    # print(timeline)
+    # print(added_timeline)
+    # print(repomap_timeline)
+
+    dump(total_plausible)
+    dump(resolved_plausible)
+    pct_resolved_plausible = 100 * resolved_plausible / total_plausible
+    dump(pct_resolved_plausible)
+
+    pct_plausible = total_plausible / total * 100
+    dump(pct_plausible)
 
     # stats_on_tests_before_and_after(report, predictions.values())
 
