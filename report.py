@@ -16,6 +16,7 @@ from tests import remove_patches_to_tests, run_tests
 from utils import (
     DATASET_FNAME,
     get_dataset,
+    get_devin_instance_ids,
     get_plausible,
     load_predictions,
     pick_winner,
@@ -84,6 +85,8 @@ def update_pred_json(predictions, report):
         save = dict(pred)
         del save["json_fname"]
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
+
+    return predictions
 
 
 def choose_pred(inst, all_preds, dnames):
@@ -221,7 +224,7 @@ def run_evals_on_dname(dname):
 
         model_name_or_path = list(predictions.values())[0]["model_name_or_path"]
         report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
-        update_pred_json(predictions, report)
+        predictions = update_pred_json(predictions, report)
 
     return predictions_jsonl, log_dir
 
@@ -268,6 +271,10 @@ def main():
         return
 
     dump(len(predictions))
+    # for pred in predictions:
+    #    if 'resolved' not in pred:
+    #        print("No resolved attr?")
+    #        dump(pred)
 
     predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
     report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
@@ -330,6 +337,7 @@ def main():
         print(f"spent: ${spent:.2f}")
 
         num_instances = len(json.load(open(DATASET_FNAME)))
+        num_instances = len(get_devin_instance_ids())
         expected_cost = num_instances * avg_cost
         print(f"expected_cost: ${expected_cost:.2f}")
 
