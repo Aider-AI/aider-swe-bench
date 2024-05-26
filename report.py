@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import os
 import random
@@ -35,6 +36,8 @@ python {base}/SWE-bench-docker/run_evaluation.py
     --num_processes 5
 """
     run_evals_cmd = " ".join([line.strip() for line in run_evals_cmd.split() if line.strip()])
+    dump(run_evals_cmd)
+
     subprocess.run(run_evals_cmd.split(), check=True)
 
 
@@ -61,6 +64,11 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
     dump(len(generated_minus_applied))
     generated_minus_applied = " ".join(iid + "*" for iid in sorted(generated_minus_applied))
     dump(generated_minus_applied)
+
+    with_logs = set(report["with_logs"])
+    with_logs_minus_applied = with_logs - applied
+    dump(len(with_logs_minus_applied))
+    dump(with_logs_minus_applied)
 
     no_apply = set(report["no_apply"])
     dump(len(no_apply))
@@ -212,6 +220,7 @@ def run_evals_on_dname(dname):
     predictions = load_predictions([dname])
 
     predictions_jsonl = preds_to_jsonl(dname, predictions)
+    dump(predictions_jsonl)
 
     log_dir = Path("logs") / dname.name
     log_dir.mkdir(exist_ok=True)
@@ -232,6 +241,16 @@ def run_evals_on_dname(dname):
 def combine_jsonl_logs(predictions, model_name_or_path):
     logs = Path("logs")
     log_dir = logs / model_name_or_path
+    if log_dir.exists():
+        old = logs / "OLD"
+        old.mkdir(exist_ok=True)
+        now = datetime.datetime.today()
+        now = now.strftime("%y%m%d-%H%M%S")
+        to = "%s.%s" % (model_name_or_path, now)
+        to = old / to
+        print(f"Moving existing {log_dir} to {to}...")
+        log_dir.rename(to)
+
     log_dir.mkdir(exist_ok=True)
     dump(log_dir)
 

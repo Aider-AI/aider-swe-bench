@@ -346,8 +346,8 @@ def main():
 
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    # models = ["openrouter/anthropic/claude-3-opus"]
-    models = ["gpt-4o"]
+    models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
 
     prefix = "full-"

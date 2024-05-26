@@ -35,7 +35,11 @@ def remove_patches_to_tests(model_patch):
             pieces = line.split()
             to = pieces[-1]
             if to.startswith("b/") and (
-                "/tests/" in to or "/testing/" in to or "/test_" in to or "/tox.ini" in to
+                "/test/" in to
+                or "/tests/" in to
+                or "/testing/" in to
+                or "/test_" in to
+                or "/tox.ini" in to
             ):
                 is_tests = True
             else:
