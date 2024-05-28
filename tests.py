@@ -6,9 +6,28 @@ import tempfile
 from pathlib import Path
 
 from dump import dump
-from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK
+from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK, MAP_VERSION_TO_INSTALL
 from swebench_docker.run_docker import run_docker_evaluation
 from swebench_docker.utils import get_test_directives
+from utils import get_dataset, get_devin_instance_ids, load_predictions
+
+
+# clipped from `run_docker_evaluation()`
+def get_docker_image(task_instance: dict, namespace: str = "aorwall"):
+    repo_name = task_instance["repo"].replace("/", "_")
+
+    specifications = MAP_VERSION_TO_INSTALL[task_instance["repo"]][task_instance["version"]]
+    image_prefix = "swe-bench"
+
+    if specifications.get("instance_image", False):
+        docker_image = (
+            f"{namespace}/{image_prefix}-{repo_name}-instance:{task_instance['instance_id']}"
+        )
+    else:
+        docker_image = f"{namespace}/{image_prefix}-{repo_name}-testbed:{task_instance['version']}"
+
+    return docker_image
+
 
 # A no-op patch which creates an empty file is used to stand in for
 # the `model_patch` and/or `test_patch` when running SWE Bench tests
@@ -109,6 +128,8 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
     asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix))
 
     log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
+    if not log_fname.exists():
+        return None, ""
 
     log_text = log_fname.read_text()
     log_lines = log_text.splitlines()
@@ -120,10 +141,50 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
     return passed, log_text
 
 
-def main():
-    from harness import get_dataset
-    from report import load_predictions
+def main_devin():
+    dataset = get_dataset()
 
+    instances = get_devin_instance_ids()
+
+    seen = set()
+    num = 0
+    num_passed = 0
+    errors = []
+    bad_dockers = []
+    for instance_id in instances:
+        entry = dataset[instance_id]
+
+        docker_image = get_docker_image(entry)
+        if docker_image in seen:
+            continue
+        seen.add(docker_image)
+
+        dump(instance_id)
+        dump(docker_image)
+
+        try:
+            passed, test_text = run_tests(
+                entry,
+                model_patch=None,
+                use_test_patch=False,
+            )
+        except FileNotFoundError as err:
+            bad_dockers.append(docker_image)
+            errors.append(err)
+
+        num += 1
+        if passed:
+            num_passed += 1
+
+        dump(num_passed, num)
+
+    for err in errors:
+        dump(err)
+
+    dump(bad_dockers)
+
+
+def main_preds():
     dataset = get_dataset()
 
     dnames = sys.argv[1:]
@@ -148,5 +209,6 @@ def main():
 
 
 if __name__ == "__main__":
-    status = main()
+    # status = main_devin()
+    status = main_preds()
     sys.exit(status)

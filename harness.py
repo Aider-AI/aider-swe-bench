@@ -132,6 +132,10 @@ def run_pre_existing_tests(entry, git_dname):
         model_patch=model_patch,
         use_test_patch=False,
     )
+    # We were UNABLE to run tests
+    if passed is None:
+        return
+
     if passed:
         return
 
@@ -346,8 +350,8 @@ def main():
 
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
+    # models = ["openrouter/anthropic/claude-3-opus"]
+    models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
 
     prefix = "full-"
@@ -402,6 +406,7 @@ def main():
     random.shuffle(remaining_instances)
 
     dump(len(remaining_instances))
+    dump(sorted(remaining_instances))
 
     print()
     print("press enter...")
@@ -410,7 +415,7 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 10
+    THREADS = 1
     if THREADS > 1:
         process_one_instance_lox = lox.thread(THREADS)(process_one_instance)
         process_one_instance_func = process_one_instance_lox.scatter
