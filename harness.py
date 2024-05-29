@@ -340,7 +340,7 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
 
 def main():
     #
-    # Set the prefix to use in front of all directory names...
+    # Set the prefix to use in front of the predictions/ subdir name.
     #
     prefix = "testing-"
     # prefix = "full025-"
@@ -368,12 +368,13 @@ def main():
     devin_insts = get_devin_instance_ids()
     dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
 
-    # How many threads to use
+    # How many threads to use for attempting instances in parallel
     threads = 1
 
-    # Any dirs provided on the command line are treated as earlier, higher priority runs.
-    # If a plausible solution was found for an instance already, we don't need
-    # to keep looking in this run.
+    # Any predictions/ dirs provided on the command line are treated
+    # as earlier, higher priority runs.  If a plausible solution was
+    # found for an instance already, we don't need to keep looking in
+    # this run.
     prior_dnames = sys.argv[1:]
 
     process_instances(prefix, dataset, models, num_tries, temperature, threads, prior_dnames)
