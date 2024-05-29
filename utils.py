@@ -1,3 +1,4 @@
+import datetime
 import json
 from pathlib import Path
 
@@ -139,3 +140,19 @@ def filter_preds_by_devin(predictions):
     devin_insts = get_devin_instance_ids()
     predictions = dict((inst, pred) for (inst, pred) in predictions.items() if inst in devin_insts)
     return predictions
+
+
+def old(fname):
+    fname = Path(fname)
+    assert fname.exists(), fname
+
+    old_dname = fname.parent / "OLD"
+    old_dname.mkdir(exist_ok=True)
+
+    now = datetime.datetime.today()
+    now = now.strftime("%y%m%d-%H%M%S")
+    to = old_dname / f"{fname.name}.{now}"
+
+    print(to, fname)
+
+    fname.rename(to)

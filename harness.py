@@ -194,7 +194,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
     return coder
 
 
-def process_one_instance(entry, models, temperature, model_name_or_path, out_dname):
+def process_one_instance(entry, num_tries, models, temperature, model_name_or_path, out_dname):
     """Process one `entry` from SWE Bench using the LLM `models` at the
     given `temperature`.  Set `model_name_or_path` in the result json.
     Store the result json and the chat log into `out_dname`.
@@ -224,10 +224,9 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
     results = []
     cost = 0
     winner = None
-    NUM_TRIES = 1
 
     # Do NUM_TRIES tries for each of the models, until we find a *plausible* solution
-    for attempt in range(1, NUM_TRIES + 1):
+    for attempt in range(1, num_tries + 1):
         for model in models:
             dump(attempt, model)
 
@@ -339,30 +338,63 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
 
 
 def main():
-    dataset = get_dataset()
-
-    # models = ["openrouter/deepseek/deepseek-chat"]
-    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
-    # models = ["gpt-4-1106-preview"]
-
+    #
+    # Set the prefix to use in front of all directory names...
+    #
     prefix = "full-"
     # prefix = "full025-"
 
+    #
+    # Configure 1 or more models to use to try and find plausible solutions
+    #
+    models = ["openrouter/deepseek/deepseek-chat"]
+    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
+    # models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
+    # models = ["gpt-4-1106-preview"]
+
+    # How many attempts per model to try and find a plausible solutions?
+    num_tries = 1
+
+    # What temperature to use during chat completions
+    temperature = 0
+
+    # Load the full SWE Bench dataset
+    dataset = get_dataset()
+
+    # Filter it to the Devin 570
+    devin_insts = get_devin_instance_ids()
+    dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
+
+    # How many threads to use
+    threads = 1
+
+    # Any dirs provided on the command line are treated as earlier, higher priority runs.
+    # If a plausible solution was found for an instance already, we don't need
+    # to keep looking in this run.
+    prior_dnames = sys.argv[1:]
+
+    process_instances(prefix, dataset, models, num_tries, temperature, threads, prior_dnames)
+
+
+def process_instances(prefix, dataset, models, num_tries, temperature, threads, prior_dnames):
+    """
+    prefix - Prefix used in front of the dirname in predictions/.
+    dataset - The subset of the SWE Bench dataset to process.
+    models - List of models to use to try and find plausible solutions.
+    num_tries - Number of attempts to make using each model.
+    temperature - Temp to use during chat completions.
+    threads - How many problems to attempt concurrently.
+    prior_dnames - Names of predictions/ dirnames from previous runs.
+                   If they contain a plausible solution for an instance,
+                   don't continue looking.
+    """
     models_slug = "--".join(model.replace("/", "-") for model in models)
     model_name_or_path = "aider--" + models_slug
     models_slug = prefix + "--" + models_slug
 
-    temperature = 0
-
     dump(models)
     dump(temperature)
-
-    ###
-    # models = ["gpt-4o"]
-    # models_slug = "flake-isolated-gpt-4o"
-    # model_name_or_path = "aider-gpt-4o"
 
     out_dname = PREDS_DNAME / models_slug
     if not out_dname.exists():
@@ -375,10 +407,6 @@ def main():
     done_instances = set(done_preds.keys())
     dump(len(done_instances))
 
-    # Any dirs provided on the command line are treated as earlier, higher priority runs.
-    # If a plausible solution was found for an instance already, we don't need
-    # to keep looking in this run.
-    prior_dnames = sys.argv[1:]
     dump(prior_dnames)
     prior_preds = load_predictions(prior_dnames)
     dump(len(prior_preds))
@@ -393,10 +421,6 @@ def main():
         all_instances = set(dataset.keys())
 
     remaining_instances = set(all_instances)
-
-    devin_insts = get_devin_instance_ids()
-    remaining_instances = remaining_instances.intersection(devin_insts)
-
     remaining_instances -= done_instances
     remaining_instances -= plausible_instances
 
@@ -413,14 +437,13 @@ def main():
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    THREADS = 1
-    if THREADS > 1:
-        process_one_instance_lox = lox.thread(THREADS)(process_one_instance)
+    threads = 1
+    if threads > 1:
+        process_one_instance_lox = lox.thread(threads)(process_one_instance)
         process_one_instance_func = process_one_instance_lox.scatter
         gather = process_one_instance_lox.gather
     else:
         process_one_instance_func = process_one_instance
-        gather = lambda: None  # noqa: E731
 
     for instance_id in remaining_instances:
         if instance_id in done_instances:
@@ -429,6 +452,7 @@ def main():
 
         process_one_instance_func(
             dataset[instance_id],
+            num_tries,
             models,
             temperature,
             model_name_or_path,
@@ -438,7 +462,7 @@ def main():
         print("#" * 60)
         # input()
 
-    if THREADS > 1:
+    if threads > 1:
         gather()
 
 

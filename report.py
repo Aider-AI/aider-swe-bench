@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import datetime
 import json
 import os
 import random
@@ -20,6 +19,7 @@ from utils import (
     get_devin_instance_ids,
     get_plausible,
     load_predictions,
+    old,
     pick_winner,
 )
 
@@ -122,6 +122,12 @@ def choose_predictions(dnames, model_name_or_path):
     for inst in all_instances:
         res = choose_pred(inst, all_preds, dnames)
         chosen[inst] = res
+
+        pred_dname = Path("predictions")
+        md_fname = pred_dname / res["dname"] / (inst + ".md")
+        assert md_fname.exists()
+        new_md_fname = pred_dname / model_name_or_path / (inst + ".md")
+        shutil.copyfile(md_fname, new_md_fname)
 
     for inst in chosen:
         pred = dict(chosen[inst])
@@ -227,7 +233,7 @@ def run_evals_on_dname(dname):
     dump(log_dir)
 
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
-    any_need_evals = True
+    # any_need_evals = True
     if any_need_evals:
         run_evals(DATASET_FNAME, str(log_dir), predictions_jsonl)
 
@@ -241,21 +247,12 @@ def run_evals_on_dname(dname):
 def combine_jsonl_logs(predictions, model_name_or_path):
     logs = Path("logs")
     log_dir = logs / model_name_or_path
-    if log_dir.exists():
-        old = logs / "OLD"
-        old.mkdir(exist_ok=True)
-        now = datetime.datetime.today()
-        now = now.strftime("%y%m%d-%H%M%S")
-        to = "%s.%s" % (model_name_or_path, now)
-        to = old / to
-        print(f"Moving existing {log_dir} to {to}...")
-        log_dir.rename(to)
+    old(log_dir)
 
     log_dir.mkdir(exist_ok=True)
     dump(log_dir)
 
     preds_dir = Path("predictions") / model_name_or_path
-    preds_dir.mkdir(exist_ok=True)
 
     predictions_jsonl = preds_to_jsonl(preds_dir, predictions)
     for inst, pred in predictions.items():
@@ -277,29 +274,40 @@ def combine_jsonl_logs(predictions, model_name_or_path):
 
 
 def main():
+    # Run with a set of prediction directories, in order of priority.
+    # Plausible solution found in the earliest directory will be selected.
     dnames = sys.argv[1:]
 
+    # Make sure evals have been completed on all instances in all supplied
+    # predictions dirs.
     for dname in dnames:
         dump(dname)
         run_evals_on_dname(dname)
 
+    # Directory to make under predictions/ and logs/ to store the
+    # plausible predictions which were selected.
+    # Outputs a clean `all_preds.jsonl`, `results.json`, `logs/`
+    # and copies over all markdown chat transcripts.
     model_name_or_path = "full"
+
+    preds_dir = Path("predictions") / model_name_or_path
+    old(preds_dir)
+    preds_dir.mkdir(exist_ok=True)
+
+    # Choose the 1st plausible pred or use the fallback logic for least bad pred
     predictions = choose_predictions(dnames, model_name_or_path)
     if not predictions:
         print("No predictions")
         return
 
     dump(len(predictions))
-    # for pred in predictions:
-    #    if 'resolved' not in pred:
-    #        print("No resolved attr?")
-    #        dump(pred)
 
     predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
     report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
     results_json = Path("predictions") / model_name_or_path / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
 
+    # Show the key stats on how many instances are resolved, etc
     counts = defaultdict(int, [(k, len(v)) for k, v in report.items()])
     dump(counts)
 
@@ -316,16 +324,6 @@ def main():
         print(f"{plus_one_percent= :.1f}%")
 
     print()
-
-    """
-    for iid in report['resolved']:
-        logs = list(log_dir.glob(f"{iid}.*log"))
-        assert len(logs) == 1, logs
-        log = logs[0]
-        text = log.read_text()
-        if 'All Tests Passed' not in text:
-            print(log)
-    """
 
     # NEED TO BE RUN?
     need_to_be_run = missing_logs - counts["no_generation"]
