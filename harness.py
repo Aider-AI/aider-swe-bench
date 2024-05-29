@@ -14,9 +14,9 @@ from aider.models import Model
 
 from dump import dump
 from tests import run_tests
-from utils import (
-    get_dataset,
+from utils import (  # get_lite_dataset,
     get_devin_instance_ids,
+    get_full_dataset,
     get_plausible,
     load_predictions,
     pick_winner,
@@ -77,6 +77,7 @@ def checkout_repo_url_commit(url, commit, dname):
     repo_name += ".git"
 
     # dump(repo_name)
+    REPOS_DNAME.mkdir(exist_ok=True)
     bare_repo = REPOS_DNAME / repo_name
 
     if not bare_repo.exists():
@@ -341,16 +342,16 @@ def main():
     #
     # Set the prefix to use in front of all directory names...
     #
-    prefix = "full-"
+    prefix = "testing-"
     # prefix = "full025-"
 
     #
     # Configure 1 or more models to use to try and find plausible solutions
     #
-    models = ["openrouter/deepseek/deepseek-chat"]
+    # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
     # models = ["openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
+    models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
 
     # How many attempts per model to try and find a plausible solutions?
@@ -359,8 +360,9 @@ def main():
     # What temperature to use during chat completions
     temperature = 0
 
-    # Load the full SWE Bench dataset
-    dataset = get_dataset()
+    # Load the SWE Bench dataset
+    dataset = get_full_dataset()
+    # dataset = get_lite_dataset()
 
     # Filter it to the Devin 570
     devin_insts = get_devin_instance_ids()

@@ -14,7 +14,7 @@ from swebench.metrics.report import get_model_report
 from dump import dump  # noqa: F401
 from tests import remove_patches_to_tests, run_tests
 from utils import (
-    DATASET_FNAME,
+    FULL_DATASET_FNAME,
     get_dataset,
     get_devin_instance_ids,
     get_plausible,
@@ -235,10 +235,10 @@ def run_evals_on_dname(dname):
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
     # any_need_evals = True
     if any_need_evals:
-        run_evals(DATASET_FNAME, str(log_dir), predictions_jsonl)
+        run_evals(FULL_DATASET_FNAME, str(log_dir), predictions_jsonl)
 
         model_name_or_path = list(predictions.values())[0]["model_name_or_path"]
-        report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
+        report = get_report(FULL_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
         predictions = update_pred_json(predictions, report)
 
     return predictions_jsonl, log_dir
@@ -303,7 +303,7 @@ def main():
     dump(len(predictions))
 
     predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
-    report = get_report(DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
+    report = get_report(FULL_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
     results_json = Path("predictions") / model_name_or_path / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
 
@@ -344,6 +344,9 @@ def main():
             costs.append(cost)
 
     if len(costs):
+        #
+        # Cost estimates are unreliable!
+        #
         recent = costs[-5:]
         recent = [f"{c:.2f}" for c in recent]
         print("recent costs:", ", ".join(recent))
@@ -353,8 +356,10 @@ def main():
         spent = sum(costs)
         print(f"spent: ${spent:.2f}")
 
-        num_instances = len(json.load(open(DATASET_FNAME)))
+        # Currently configured to assume the Devin 570 need to be processed
+        # num_instances = len(json.load(open(FULL_DATASET_FNAME)))
         num_instances = len(get_devin_instance_ids())
+
         expected_cost = num_instances * avg_cost
         print(f"expected_cost: ${expected_cost:.2f}")
 

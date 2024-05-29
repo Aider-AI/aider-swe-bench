@@ -1,0 +1,4 @@
+lox
+aider-chat
+git+https://github.com/princeton-nlp/SWE-bench
+pre-commit

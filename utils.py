@@ -6,13 +6,14 @@ from datasets import load_dataset
 
 from dump import dump  # noqa: F401
 
-# DATASET = "princeton-nlp/SWE-bench_Lite"
-DATASET = "princeton-nlp/SWE-bench"
+FULL_DATASET = "princeton-nlp/SWE-bench"
+FULL_DATASET_FNAME = FULL_DATASET.replace("/", "--") + ".json"
 
-DATASET_FNAME = DATASET.replace("/", "--") + ".json"
+LITE_DATASET = "princeton-nlp/SWE-bench_Lite"
+LITE_DATASET_FNAME = LITE_DATASET.replace("/", "--") + ".json"
 
 
-def dump_dataset(dataset):
+def dump_dataset(dataset, fname):
     """
     Save the dataset to json.
     """
@@ -21,24 +22,32 @@ def dump_dataset(dataset):
         entry["FAIL_TO_PASS"] = json.loads(entry["FAIL_TO_PASS"])
         entry["PASS_TO_PASS"] = json.loads(entry["PASS_TO_PASS"])
 
-    with open(DATASET_FNAME, "w") as f:
+    with open(fname, "w") as f:
         json.dump(entries, f, indent=4)
 
 
-def get_dataset():
+def get_full_dataset():
+    return get_dataset(FULL_DATASET, FULL_DATASET_FNAME)
+
+
+def get_lite_dataset():
+    return get_dataset(LITE_DATASET, LITE_DATASET_FNAME)
+
+
+def get_dataset(dataset, fname):
     """
     Load the `DATASET` from hugging face, and turn it into a dict
     keyed on `instance_id`.
     Cache the dict locally in a json file.
     """
 
-    fname = Path(DATASET_FNAME)
+    fname = Path(fname)
     if fname.exists():
         dataset = json.loads(fname.read_text())
     else:
-        dataset = load_dataset(DATASET)
+        dataset = load_dataset(dataset)
         dataset = dataset["test"]
-        dump_dataset(dataset)
+        dump_dataset(dataset, fname)
 
     res = dict()
     for entry in dataset:
