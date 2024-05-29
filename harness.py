@@ -195,9 +195,8 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
 
 
 def process_one_instance(entry, models, temperature, model_name_or_path, out_dname):
-    """
-    Process one `entry` from SWE Bench using the LLM `model`.
-    Set `model_name_or_path` in the result json.
+    """Process one `entry` from SWE Bench using the LLM `models` at the
+    given `temperature`.  Set `model_name_or_path` in the result json.
     Store the result json and the chat log into `out_dname`.
     """
 
@@ -227,6 +226,7 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
     winner = None
     NUM_TRIES = 1
 
+    # Do NUM_TRIES tries for each of the models, until we find a *plausible* solution
     for attempt in range(1, NUM_TRIES + 1):
         for model in models:
             dump(attempt, model)
@@ -260,7 +260,7 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
                 dump(coder_err)
                 continue
 
-            # Take note of which files aider added to the chat
+            # Take note of which files aider added to the chat for stats later
             added_files = coder.get_inchat_relative_files()
 
             dump(instance_id)
@@ -296,7 +296,7 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
 
             dump(result)
 
-            # Did we get a successful edit, lint and test? If so, we're done!
+            # Did we get a successful edit, lint and test? If so, we found a plausible solution!
             if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
                 winner = result
 
@@ -317,6 +317,8 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
         )
 
     dump(winner)
+    if not winner:
+        return
 
     print("\n\nFinal diff:\n")
     print(winner["model_patch"])
@@ -339,19 +341,10 @@ def process_one_instance(entry, models, temperature, model_name_or_path, out_dna
 def main():
     dataset = get_dataset()
 
-    # model = "gemini/gemini-1.5-pro-latest"
-    # model = "gpt-3.5-turbo"
-    # model = "gpt-4-1106-preview"
-    # model = "gold"
-
-    # model = "deepseek/deepseek-chat"
-    # model = "gpt-4o"
-    # model = "openrouter/anthropic/claude-3-opus"
-
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    # models = ["openrouter/anthropic/claude-3-opus"]
-    models = ["gpt-4o"]
+    models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
 
     prefix = "full-"
@@ -377,10 +370,14 @@ def main():
 
     dump(out_dname)
 
+    # If we are restarting this run, figure out which instances are already done.
     done_preds = load_predictions([out_dname])
     done_instances = set(done_preds.keys())
     dump(len(done_instances))
 
+    # Any dirs provided on the command line are treated as earlier, higher priority runs.
+    # If a plausible solution was found for an instance already, we don't need
+    # to keep looking in this run.
     prior_dnames = sys.argv[1:]
     dump(prior_dnames)
     prior_preds = load_predictions(prior_dnames)
@@ -390,6 +387,7 @@ def main():
     dump(len(plausible_instances))
 
     if prior_preds:
+        # Just keep trying to solve instances that exist in the previous runs
         all_instances = set(prior_preds.keys())
     else:
         all_instances = set(dataset.keys())
