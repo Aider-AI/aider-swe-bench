@@ -1,7 +1,7 @@
 
 # Aider SWE Bench harness
 
-Aider recently [scored 26.3%](https://github.com/swe-bench/experiments/pull/7)
+[Aider recently scored 26.3%](https://github.com/swe-bench/experiments/pull/7)
 on the
 [SWE Bench Lite benchmark](https://www.swebench.com),
 achieving a state-of-the-art result. 
@@ -78,8 +78,8 @@ def aider_agent(swe_bench_problem):
 ```
 
 The
-[actual function](XXX)
-for this is a bit more verbose because it's keeping
+[actual function `proccess_one_instances()`](https://github.com/paul-gauthier/aider-swe-bench/blob/main/harness.py#L198)
+is a bit more verbose because it's keeping
 track of various data for statistics, etc.
 It also handles the case where no plausible solution is ever found,
 by picking the least bad candidate solution.
@@ -88,10 +88,10 @@ by picking the least bad candidate solution.
 
 ```
 # Clone this repo
-git clone XXX
+git clone https://github.com/paul-gauthier/aider-swe-bench
 
 # Clone the SWE Bench docker repo into a subdir of this repo
-cd XXX
+cd aider-swe-bench
 git clone https://github.com/aorwall/SWE-bench-docker
 
 # Install pip requirements
