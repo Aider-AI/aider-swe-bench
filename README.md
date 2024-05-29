@@ -66,7 +66,7 @@ def aider_agent(swe_bench_problem):
                 model=model,
                 repo_dirname=repo_tmp_dirname,
                 user_input_message=swe_bench_problem.problem_statement,
-                test_cmd=swe_bench_problems.test_cmd_for_preexisting_tests,
+                test_cmd=swe_bench_problem.test_cmd_for_preexisting_tests,
                 accept_all_suggestions=True,
                 )
             
@@ -77,8 +77,8 @@ def aider_agent(swe_bench_problem):
                    return aider_result.diffs
 ```
 
-The
-[actual function `proccess_one_instances()`](https://github.com/paul-gauthier/aider-swe-bench/blob/main/harness.py#L198)
+The 
+[actual function for this](https://github.com/paul-gauthier/aider-swe-bench/blob/main/harness.py#L198)
 is a bit more verbose because it's keeping
 track of various data for statistics, etc.
 It also handles the case where no plausible solution is ever found,
