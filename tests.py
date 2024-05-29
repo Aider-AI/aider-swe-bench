@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
 import asyncio
+import json
+import random
 import sys
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from dump import dump
 from swebench_docker.constants import MAP_REPO_TO_TEST_FRAMEWORK, MAP_VERSION_TO_INSTALL
 from swebench_docker.run_docker import run_docker_evaluation
 from swebench_docker.utils import get_test_directives
-from utils import get_dataset, get_devin_instance_ids, load_predictions
+from utils import get_dataset, get_devin_instance_ids, load_predictions  # noqa: F401
 
 
 # clipped from `run_docker_evaluation()`
@@ -141,47 +144,77 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
     return passed, log_text
 
 
-def main_devin():
+def main_check_docker_images():
     dataset = get_dataset()
 
-    instances = get_devin_instance_ids()
+    # instances = get_devin_instance_ids()
+    instances = list(dataset.keys())
+    random.shuffle(instances)
 
-    seen = set()
-    num = 0
-    num_passed = 0
-    errors = []
-    bad_dockers = []
+    cache_fname = Path("tmp.dockerimages.json")
+    if cache_fname.exists():
+        data = json.loads(cache_fname.read_text())
+        good_dockers = defaultdict(int, data["good"])
+        bad_dockers = defaultdict(int, data["bad"])
+        seen_instances = set(data["instances"])
+    else:
+        good_dockers = defaultdict(int)
+        bad_dockers = defaultdict(int)
+        seen_instances = set()
+
     for instance_id in instances:
         entry = dataset[instance_id]
 
-        docker_image = get_docker_image(entry)
-        if docker_image in seen:
+        if instance_id in seen_instances:
             continue
-        seen.add(docker_image)
+
+        seen_instances.add(instance_id)
+
+        docker_image = get_docker_image(entry)
+        if docker_image in bad_dockers:
+            bad_dockers[docker_image] += 1
+            continue
+
+        if docker_image in good_dockers:
+            good_dockers[docker_image] += 1
+            continue
 
         dump(instance_id)
         dump(docker_image)
 
-        try:
-            passed, test_text = run_tests(
-                entry,
-                model_patch=None,
-                use_test_patch=False,
-            )
-        except FileNotFoundError as err:
-            bad_dockers.append(docker_image)
-            errors.append(err)
+        passed, test_text = run_tests(
+            entry,
+            model_patch=None,
+            use_test_patch=False,
+        )
+        if passed is None:
+            bad_dockers[docker_image] += 1
+        else:
+            good_dockers[docker_image] += 1
 
-        num += 1
-        if passed:
-            num_passed += 1
+        update_cache(cache_fname, seen_instances, good_dockers, bad_dockers)
 
-        dump(num_passed, num)
-
-    for err in errors:
-        dump(err)
+    update_cache(cache_fname, seen_instances, good_dockers, bad_dockers)
 
     dump(bad_dockers)
+
+
+def update_cache(cache_fname, instances, good_dockers, bad_dockers):
+    save_dict = dict(
+        instances=list(instances),
+        good=dict(good_dockers),
+        bad=dict(bad_dockers),
+    )
+    cache_fname.write_text(json.dumps(save_dict, indent=4, sort_keys=True))
+
+    total_instances = sum(good_dockers.values()) + sum(bad_dockers.values())
+    dump(total_instances)
+    bad_instances = sum(bad_dockers.values())
+    dump(bad_instances)
+    if total_instances:
+        pct_bad_instances = bad_instances / total_instances * 100
+        dump(pct_bad_instances)
+    dump(len(bad_dockers))
 
 
 def main_preds():
@@ -209,6 +242,6 @@ def main_preds():
 
 
 if __name__ == "__main__":
-    # status = main_devin()
-    status = main_preds()
+    status = main_check_docker_images()
+    # status = main_preds()
     sys.exit(status)
