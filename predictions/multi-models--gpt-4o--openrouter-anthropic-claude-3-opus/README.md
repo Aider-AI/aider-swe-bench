@@ -31,6 +31,8 @@ It might be better to think of them as "proposed solutions",
 because if no plausible solution was found then the least-bad/most-plausible
 solution was used.
 
+## Markdown and JSON files
+
 Each of the 300 problems has data in 2 files:
 
 - a markdown file with chat transcripts of aider working on solutions.
@@ -38,7 +40,7 @@ Each of the 300 problems has data in 2 files:
 
 The json file for each problem is a dict with the following fields.
 These first 3 fields are the same as fields used in the standard `all_preds.jsonl`
-file used by SWE Bench:
+file used by SWE Bench, and represent the solution found by aider to the problem.
 
 - instance_id
 - model_name_or_path
@@ -65,6 +67,38 @@ about the benchmark run:
 - resolved - Is the solution correct? After aider finished working on the problem in the `harness.py` script, the `report.py` script backfilled the acceptance testing outcome into the json file.
 - tries - Disregard. Intended to record how many loops through the models were made, but suffered from an off-by-one bug.
 - all_results - A list of dicts for all 1-6 results produced by aider working on this problem, in the order produced. Each dict has all of the above fields except `resolved`, `tries`.
+
+The result chosen by the harness is the top level dict of the json file.
+This result will also appear in the `all_results` list.
+The harness was designed to stop as soon as a plausible result was found
+and select it.
+If no plausible solution is found after all 6 attempts, then the harness
+picks the "most plausible" solution as described in the article.
+
+
+## Anomalies
+
+There appears to have been a bug introduced late in the benchmarking process.
+There was a missing `break` in the inside loop of the harness
+(fixed [here](https://github.com/paul-gauthier/aider-swe-bench/commit/a9c21d2e235ef2ead5d49432343de479e8dcc937)).
+If gpt-4o found a plausible solution, the inner loop continued and gave opus
+1 more try. The result of this bug was that
+if opus also found a plausible solution, it was selected;
+if not, the gpt-4o plausible solution was selected.
+This bug doesn't affect the integrity of the results, but simply
+increased the cost to solve the affected problems.
+The bug appears to have affected the following instances:
+
+- sphinx-doc__sphinx-7975
+- sphinx-doc__sphinx-11445
+- sphinx-doc__sphinx-8282
+- sphinx-doc__sphinx-8435
+- sphinx-doc__sphinx-8627
+- sphinx-doc__sphinx-8627
+- sphinx-doc__sphinx-7738
+- sphinx-doc__sphinx-10325
+
+## all_preds.jsonl
 
 This directory also contains `all_preds.jsonl`, which was distilled from the 300 json files
 and [submitted to the official leaderboard](https://github.com/swe-bench/experiments/pull/7).
