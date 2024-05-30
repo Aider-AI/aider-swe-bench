@@ -364,9 +364,12 @@ def main():
     dataset = get_full_dataset()
     # dataset = get_lite_dataset()
 
-    # Filter it to the Devin 570
-    devin_insts = get_devin_instance_ids()
-    dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
+    just_devin_570 = True
+
+    if just_devin_570:
+        # Filter it to the Devin 570
+        devin_insts = get_devin_instance_ids()
+        dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
 
     # How many threads to use for attempting instances in parallel
     threads = 1
@@ -377,10 +380,14 @@ def main():
     # this run.
     prior_dnames = sys.argv[1:]
 
-    process_instances(prefix, dataset, models, num_tries, temperature, threads, prior_dnames)
+    process_instances(
+        prefix, dataset, models, num_tries, temperature, threads, prior_dnames, just_devin_570
+    )
 
 
-def process_instances(prefix, dataset, models, num_tries, temperature, threads, prior_dnames):
+def process_instances(
+    prefix, dataset, models, num_tries, temperature, threads, prior_dnames, just_devin_570
+):
     """
     prefix - Prefix used in front of the dirname in predictions/.
     dataset - The subset of the SWE Bench dataset to process.
@@ -406,12 +413,12 @@ def process_instances(prefix, dataset, models, num_tries, temperature, threads, 
     dump(out_dname)
 
     # If we are restarting this run, figure out which instances are already done.
-    done_preds = load_predictions([out_dname])
+    done_preds = load_predictions([out_dname], just_devin_570)
     done_instances = set(done_preds.keys())
     dump(len(done_instances))
 
     dump(prior_dnames)
-    prior_preds = load_predictions(prior_dnames)
+    prior_preds = load_predictions(prior_dnames, just_devin_570)
     dump(len(prior_preds))
 
     plausible_instances = get_plausible(prior_preds)

@@ -56,7 +56,7 @@ def get_dataset(dataset, fname):
     return res
 
 
-def load_predictions(paths):
+def load_predictions(paths, devin_only=False):
     prediction_paths = []
     for path in paths:
         path = Path(path)
@@ -80,8 +80,8 @@ def load_predictions(paths):
         pred["json_fname"] = str(fname)
         predictions[inst] = pred
 
-    ###
-    predictions = filter_preds_by_devin(predictions)
+    if devin_only:
+        predictions = filter_preds_by_devin(predictions)
 
     return predictions
 

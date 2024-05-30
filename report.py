@@ -17,11 +17,12 @@ from utils import (
     FULL_DATASET_FNAME,
     get_dataset,
     get_devin_instance_ids,
-    get_plausible,
     load_predictions,
     old,
     pick_winner,
 )
+
+JUST_DEVIN_570 = True
 
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
@@ -113,7 +114,7 @@ def choose_pred(inst, all_preds, dnames):
 
 
 def choose_predictions(dnames, model_name_or_path):
-    all_preds = [load_predictions([dname]) for dname in dnames]
+    all_preds = [load_predictions([dname], devin_only=JUST_DEVIN_570) for dname in dnames]
     all_instances = set()
     for preds in all_preds:
         all_instances.update(preds.keys())
@@ -128,70 +129,6 @@ def choose_predictions(dnames, model_name_or_path):
         assert md_fname.exists()
         new_md_fname = pred_dname / model_name_or_path / (inst + ".md")
         shutil.copyfile(md_fname, new_md_fname)
-
-    for inst in chosen:
-        pred = dict(chosen[inst])
-        pred["model_name_or_path"] = model_name_or_path
-        chosen[inst] = pred
-
-    dump(len(chosen))
-    return chosen
-
-
-def _choose_predictions(dnames, model_name_or_path):
-    num_dnames = len(dnames)
-
-    all_preds = [load_predictions([dname]) for dname in dnames]
-
-    all_plausible = [get_plausible(preds) for preds in all_preds]
-
-    all_instances = set()
-    for preds in all_preds:
-        all_instances.update(preds.keys())
-
-    dump(len(all_instances))
-    for i in range(len(all_preds)):
-        plausible_insts = all_plausible[i]
-        preds = all_preds[i]
-        dname = dnames[i]
-        dump(i, dname)
-        dump(len(plausible_insts))
-        dump(len(preds))
-
-    chosen = dict()
-    for inst in all_instances:
-        for i in range(num_dnames):
-            plausible_insts = all_plausible[i]
-            preds = all_preds[i]
-            dname = Path(dnames[i])
-
-            if inst in plausible_insts:
-                chosen[inst] = preds[inst]
-                chosen[inst]["dname"] = dname.name
-                break
-
-        if inst in chosen:
-            continue
-
-        for i in range(len(all_preds)):
-            preds = all_preds[i]
-            dname = Path(dnames[i])
-
-            if inst in preds and preds[inst]["model_patch"]:
-                chosen[inst] = preds[inst]
-                chosen[inst]["dname"] = dname.name
-                break
-
-        if inst in chosen:
-            continue
-
-        for i in range(len(all_preds)):
-            preds = all_preds[i]
-            dname = Path(dnames[i])
-
-            if inst in preds:
-                chosen[inst] = preds[inst]
-                chosen[inst]["dname"] = dname.name
 
     for inst in chosen:
         pred = dict(chosen[inst])
@@ -223,7 +160,7 @@ def preds_to_jsonl(dname, predictions):
 def run_evals_on_dname(dname):
     dname = Path(dname)
 
-    predictions = load_predictions([dname])
+    predictions = load_predictions([dname], devin_only=JUST_DEVIN_570)
 
     predictions_jsonl = preds_to_jsonl(dname, predictions)
     dump(predictions_jsonl)
@@ -356,9 +293,11 @@ def main():
         spent = sum(costs)
         print(f"spent: ${spent:.2f}")
 
-        # Currently configured to assume the Devin 570 need to be processed
-        # num_instances = len(json.load(open(FULL_DATASET_FNAME)))
-        num_instances = len(get_devin_instance_ids())
+        # If configured to assume the Devin 570 need to be processed
+        if JUST_DEVIN_570:
+            num_instances = len(get_devin_instance_ids())
+        else:
+            num_instances = len(json.load(open(FULL_DATASET_FNAME)))
 
         expected_cost = num_instances * avg_cost
         print(f"expected_cost: ${expected_cost:.2f}")
