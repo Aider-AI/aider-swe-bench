@@ -299,6 +299,7 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
             # Did we get a successful edit, lint and test? If so, we found a plausible solution!
             if model_patch and coder.edit_outcome and coder.lint_outcome and coder.test_outcome:
                 winner = result
+                break
 
         # also break out of the attempts loop
         if winner:
