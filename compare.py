@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 
 from dump import dump
 from report import load_predictions
-from utils import is_plausible
+from utils import choose_predictions, is_plausible
 
 dnames = sys.argv[1:]
 
@@ -31,7 +31,11 @@ odd = [
 ]
 # odd = []
 
+chosen = choose_predictions(dnames, devin_only=True)
+
 histories = dict()
+resolved = defaultdict(int)
+
 for inst in all_insts:
     history = []
     for dname in dnames:
@@ -55,6 +59,9 @@ for inst in all_insts:
     history = " | ".join(history)
     histories[inst] = history
 
+    if chosen[inst]["resolved"]:
+        resolved[history] += 1
+
 
 for inst in odd:
     history = histories[inst]
@@ -70,9 +77,10 @@ for history, cnt in counts:
     label = chr(ord("A") + row)
     row += 1
     total += cnt
-    print(f"| {label} | {history} | {cnt:3} |")
+    print(f"| {label} | {history} | {cnt:3} | {resolved[history]:3d} |")
 
 dump(total)
+dump(sum(resolved.values()))
 sys.exit()
 
 dump(len(all_insts))
