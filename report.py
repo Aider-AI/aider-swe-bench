@@ -15,11 +15,11 @@ from dump import dump  # noqa: F401
 from tests import remove_patches_to_tests, run_tests
 from utils import (
     FULL_DATASET_FNAME,
+    choose_predictions,
     get_dataset,
     get_devin_instance_ids,
     load_predictions,
     old,
-    pick_winner,
 )
 
 JUST_DEVIN_570 = True
@@ -59,6 +59,9 @@ def get_report(swe_bench_tasks, log_dir, predictions_jsonl, model_name_or_path):
 
     # dump(report)
 
+    resolved_instances = report["resolved"]
+    dump(sorted(resolved_instances))
+
     generated = set(report["generated"])
     applied = set(report["applied"])
     generated_minus_applied = generated - applied
@@ -96,47 +99,6 @@ def update_pred_json(predictions, report):
         Path(pred["json_fname"]).write_text(json.dumps(save, indent=4))
 
     return predictions
-
-
-def choose_pred(inst, all_preds, dnames):
-    results = []
-    for i in range(len(all_preds)):
-        preds = all_preds[i]
-        dname = dnames[i]
-
-        if inst not in preds:
-            continue
-        pred = dict(preds[inst])
-        pred["dname"] = Path(dname).name
-        results.append(pred)
-
-    return pick_winner(results)
-
-
-def choose_predictions(dnames, model_name_or_path):
-    all_preds = [load_predictions([dname], devin_only=JUST_DEVIN_570) for dname in dnames]
-    all_instances = set()
-    for preds in all_preds:
-        all_instances.update(preds.keys())
-
-    chosen = dict()
-    for inst in all_instances:
-        res = choose_pred(inst, all_preds, dnames)
-        chosen[inst] = res
-
-        pred_dname = Path("predictions")
-        md_fname = pred_dname / res["dname"] / (inst + ".md")
-        assert md_fname.exists()
-        new_md_fname = pred_dname / model_name_or_path / (inst + ".md")
-        shutil.copyfile(md_fname, new_md_fname)
-
-    for inst in chosen:
-        pred = dict(chosen[inst])
-        pred["model_name_or_path"] = model_name_or_path
-        chosen[inst] = pred
-
-    dump(len(chosen))
-    return chosen
 
 
 def preds_to_jsonl(dname, predictions):
@@ -232,7 +194,9 @@ def main():
     preds_dir.mkdir(exist_ok=True)
 
     # Choose the 1st plausible pred or use the fallback logic for least bad pred
-    predictions = choose_predictions(dnames, model_name_or_path)
+    predictions = choose_predictions(
+        dnames, model_name_or_path, copy_md=True, devin_only=JUST_DEVIN_570
+    )
     if not predictions:
         print("No predictions")
         return

@@ -343,7 +343,7 @@ def main():
     #
     # Set the prefix to use in front of the predictions/ subdir name.
     #
-    prefix = "testing-"
+    prefix = "full-"
     # prefix = "full025-"
 
     #

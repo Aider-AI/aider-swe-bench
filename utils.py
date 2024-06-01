@@ -1,5 +1,6 @@
 import datetime
 import json
+import shutil
 from pathlib import Path
 
 from datasets import load_dataset
@@ -89,7 +90,7 @@ def load_predictions(paths, devin_only=False):
 def is_plausible(pred):
     attrs = "model_patch edit_outcome lint_outcome test_outcome".split()
     for attr in attrs:
-        if not pred[attr]:
+        if not pred.get(attr):
             return
     return True
 
@@ -165,3 +166,45 @@ def old(fname):
     print(to, fname)
 
     fname.rename(to)
+
+
+def choose_pred(inst, all_preds, dnames):
+    results = []
+    for i in range(len(all_preds)):
+        preds = all_preds[i]
+        dname = dnames[i]
+
+        if inst not in preds:
+            continue
+        pred = dict(preds[inst])
+        pred["dname"] = Path(dname).name
+        results.append(pred)
+
+    return pick_winner(results)
+
+
+def choose_predictions(dnames, model_name_or_path=None, copy_md=False, devin_only=False):
+    all_preds = [load_predictions([dname], devin_only=devin_only) for dname in dnames]
+    all_instances = set()
+    for preds in all_preds:
+        all_instances.update(preds.keys())
+
+    chosen = dict()
+    for inst in all_instances:
+        res = choose_pred(inst, all_preds, dnames)
+        chosen[inst] = res
+
+        if copy_md:
+            pred_dname = Path("predictions")
+            md_fname = pred_dname / res["dname"] / (inst + ".md")
+            assert md_fname.exists()
+            new_md_fname = pred_dname / model_name_or_path / (inst + ".md")
+            shutil.copyfile(md_fname, new_md_fname)
+
+    for inst in chosen:
+        pred = dict(chosen[inst])
+        pred["model_name_or_path"] = model_name_or_path
+        chosen[inst] = pred
+
+    dump(len(chosen))
+    return chosen

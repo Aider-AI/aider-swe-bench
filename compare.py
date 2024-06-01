@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 
 from dump import dump
 from report import load_predictions
+from utils import is_plausible
 
 dnames = sys.argv[1:]
 
@@ -13,12 +14,66 @@ all_insts = set()
 
 for dname in dnames:
     dump(dname)
-    preds = load_predictions([dname])
+    preds = load_predictions([dname], devin_only=True)
     all_preds[dname] = preds
 
     dump(sum(pred["resolved"] for pred in preds.values()))
 
     all_insts.update(preds.keys())
+
+
+odd = [
+    "astropy__astropy-13032",
+    "django__django-11298",
+    "sympy__sympy-11618",
+    "sympy__sympy-12301",
+    "sympy__sympy-18532",
+]
+# odd = []
+
+histories = dict()
+for inst in all_insts:
+    history = []
+    for dname in dnames:
+        pred = all_preds[dname].get(inst)
+        if pred is None:
+            history += ["n/a", "n/a"]
+            continue
+        if is_plausible(pred):
+            history += ["plausible"]
+        else:
+            history += ["non-plausible"]
+        if pred["resolved"]:
+            history += ["resolved"]
+        else:
+            history += ["not resolved"]
+
+    if history == ["non-plausible", "not resolved", "n/a", "n/a"]:
+        dump(inst)
+
+    history = [f"{x:15}" for x in history]
+    history = " | ".join(history)
+    histories[inst] = history
+
+
+for inst in odd:
+    history = histories[inst]
+    dump(history, inst)
+
+histories = dict((inst, kind) for inst, kind in histories.items())
+
+counts = Counter(histories.values())
+counts = sorted(counts.items(), reverse=True)
+row = 0
+total = 0
+for history, cnt in counts:
+    label = chr(ord("A") + row)
+    row += 1
+    total += cnt
+    print(f"| {label} | {history} | {cnt:3} |")
+
+dump(total)
+sys.exit()
 
 dump(len(all_insts))
 

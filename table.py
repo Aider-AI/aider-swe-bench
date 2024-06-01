@@ -5,17 +5,20 @@ import sys
 from collections import Counter, defaultdict
 
 from dump import dump
-from report import load_predictions
+from utils import choose_predictions
+
+devin_only = True
 
 dnames = sys.argv[1:]
-preds = load_predictions(dnames)
+preds = choose_predictions(dnames, devin_only=devin_only)
 
 # dataset = get_dataset()
 
 items = list(preds.items())
 random.shuffle(items)
 
-dump(len(items))
+num_instances = len(items)
+dump(num_instances)
 
 name = {
     "gpt-4o": "Aider with GPT-4o",
@@ -28,6 +31,8 @@ resolved = []
 
 model_proposed = defaultdict(int)
 model_resolved = defaultdict(int)
+
+resolved_instances = set()
 
 for inst, pred in items:
     is_resolved = pred["resolved"]
@@ -42,6 +47,11 @@ for inst, pred in items:
     if is_resolved:
         resolved.append(key)
         model_resolved[model] += 1
+        resolved_instances.add(inst)
+
+
+dump(len(resolved_instances))
+dump(sorted(resolved_instances))
 
 
 num_proposed = len(proposed)
@@ -58,7 +68,7 @@ for key, count_p in sorted(counts_proposed.items()):
     attempt, model = key
     pct_p = count_p * 100 / num_proposed
     pct_r = count_r * 100 / num_resolved
-    pct_of_all = count_r / 3
+    pct_of_all = count_r / num_instances * 100
 
     pct_r_of_p = count_r / count_p * 100
 
@@ -68,7 +78,7 @@ for key, count_p in sorted(counts_proposed.items()):
         # f" {pct_r_of_p:4.1f}%"
     )
 
-pct_of_all = num_resolved / 3
+pct_of_all = num_resolved / num_instances * 100
 
 print(
     f"| **Total** | | **{num_proposed}** | **100%** | **{num_resolved}** | **100%** |"
