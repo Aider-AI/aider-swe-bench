@@ -21,16 +21,6 @@ for dname in dnames:
 
     all_insts.update(preds.keys())
 
-
-odd = [
-    "astropy__astropy-13032",
-    "django__django-11298",
-    "sympy__sympy-11618",
-    "sympy__sympy-12301",
-    "sympy__sympy-18532",
-]
-# odd = []
-
 chosen = choose_predictions(dnames, devin_only=True)
 
 histories = dict()
@@ -62,6 +52,8 @@ for inst in all_insts:
     if chosen[inst]["resolved"]:
         resolved[history] += 1
 
+
+odd = []
 
 for inst in odd:
     history = histories[inst]
