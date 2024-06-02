@@ -68,7 +68,7 @@ def load_predictions(paths, devin_only=False):
         else:
             assert False, path
 
-    prediction_paths.sort(key=lambda p: p.stat().st_mtime)
+    # prediction_paths.sort(key=lambda p: p.stat().st_mtime)
 
     predictions = dict()
     for fname in prediction_paths:
@@ -154,7 +154,8 @@ def filter_preds_by_devin(predictions):
 
 def old(fname):
     fname = Path(fname)
-    assert fname.exists(), fname
+    if not fname.exists():
+        return
 
     old_dname = fname.parent / "OLD"
     old_dname.mkdir(exist_ok=True)

@@ -46,16 +46,16 @@ for inst in all_insts:
         if is_plausible(pred):
             history += ["plausible"]
         else:
-            history += ["non-plausible"]
+            history += ["no"]
         if pred["resolved"]:
             history += ["resolved"]
         else:
-            history += ["not resolved"]
+            history += ["no"]
 
     if history == ["non-plausible", "not resolved", "n/a", "n/a"]:
         dump(inst)
 
-    history = [f"{x:15}" for x in history]
+    history = [f"{x:10}" for x in history]
     history = " | ".join(history)
     histories[inst] = history
 
