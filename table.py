@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 from dump import dump
 from utils import choose_predictions
 
-devin_only = True
+devin_only = False
 
 dnames = sys.argv[1:]
 preds = choose_predictions(dnames, devin_only=devin_only)
