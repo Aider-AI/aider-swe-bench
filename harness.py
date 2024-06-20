@@ -14,13 +14,9 @@ from aider.models import Model
 
 from dump import dump
 from tests import run_tests
-from utils import (  # get_lite_dataset,
-    get_devin_instance_ids,
-    get_full_dataset,
-    get_plausible,
-    load_predictions,
-    pick_winner,
-)
+from utils import get_full_dataset  # noqa: F401
+from utils import get_lite_dataset  # noqa: F401
+from utils import get_devin_instance_ids, get_plausible, load_predictions, pick_winner
 
 REPOS_DNAME = Path("repos")
 CHAT_LOGS_DNAME = Path("chat-logs")
@@ -343,7 +339,8 @@ def main():
     #
     # Set the prefix to use in front of the predictions/ subdir name.
     #
-    prefix = "full-"
+    prefix = "lite"
+    # prefix = "full-"
     # prefix = "full025-"
 
     #
@@ -352,8 +349,9 @@ def main():
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
     # models = ["openrouter/anthropic/claude-3-opus"]
-    models = ["gpt-4o"]
+    # models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
+    models = ["openrouter/anthropic/claude-3.5-sonnet"]
 
     # How many attempts per model to try and find a plausible solutions?
     num_tries = 1
@@ -362,10 +360,10 @@ def main():
     temperature = 0
 
     # Load the SWE Bench dataset
-    dataset = get_full_dataset()
-    # dataset = get_lite_dataset()
+    # dataset = get_full_dataset()
+    dataset = get_lite_dataset()
 
-    just_devin_570 = True
+    just_devin_570 = False
 
     if just_devin_570:
         # Filter it to the Devin 570
@@ -373,7 +371,7 @@ def main():
         dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
 
     # How many threads to use for attempting instances in parallel
-    threads = 1
+    threads = 10
 
     # Any predictions/ dirs provided on the command line are treated
     # as earlier, higher priority runs.  If a plausible solution was

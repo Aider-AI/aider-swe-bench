@@ -22,7 +22,7 @@ from utils import (
     old,
 )
 
-JUST_DEVIN_570 = True
+JUST_DEVIN_570 = False
 
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
@@ -284,7 +284,7 @@ def main():
         gold_files = set(data.get("gold_files", []))
         added_files = set(data.get("added_files", []))
 
-        resolved = data["resolved"]
+        resolved = data.get("resolved")
         added_gold = (added_files.intersection(gold_files) == gold_files) and gold_files
 
         plausible = (
@@ -347,8 +347,9 @@ def main():
 
     dump(total_plausible)
     dump(resolved_plausible)
-    pct_resolved_plausible = 100 * resolved_plausible / total_plausible
-    dump(pct_resolved_plausible)
+    if total_plausible:
+        pct_resolved_plausible = 100 * resolved_plausible / total_plausible
+        dump(pct_resolved_plausible)
 
     pct_plausible = total_plausible / total * 100
     dump(pct_plausible)
