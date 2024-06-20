@@ -218,6 +218,10 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
 
     chat_history_file = out_dname / (instance_id + ".md")
 
+    # Clean up chat history from previous aborted run
+    if chat_history_file.exists():
+        chat_history_file.unlink()
+
     results = []
     cost = 0
     winner = None
@@ -339,7 +343,7 @@ def main():
     #
     # Set the prefix to use in front of the predictions/ subdir name.
     #
-    prefix = "lite"
+    prefix = "lite025"
     # prefix = "full-"
     # prefix = "full025-"
 
@@ -357,7 +361,7 @@ def main():
     num_tries = 1
 
     # What temperature to use during chat completions
-    temperature = 0
+    temperature = 0.25
 
     # Load the SWE Bench dataset
     # dataset = get_full_dataset()
@@ -443,11 +447,14 @@ def process_instances(
     print("press enter...")
     input()
 
+    if not CHAT_LOGS_DNAME.exists():
+        CHAT_LOGS_DNAME.mkdir()
+
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
     if threads > 1:
-        process_one_instance_lox = lox.thread(threads)(process_one_instance)
+        process_one_instance_lox = lox.process(threads)(process_one_instance)
         process_one_instance_func = process_one_instance_lox.scatter
         gather = process_one_instance_lox.gather
     else:

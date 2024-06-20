@@ -46,6 +46,7 @@ def get_dataset(dataset, fname):
     if fname.exists():
         dataset = json.loads(fname.read_text())
     else:
+        dump(dataset)
         dataset = load_dataset(dataset)
         dataset = dataset["test"]
         dump_dataset(dataset, fname)

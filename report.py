@@ -24,6 +24,7 @@ from utils import (
 
 JUST_DEVIN_570 = False
 
+NUM_EVAL_PROCS = 5
 
 def run_evals(swe_bench_tasks, log_dir, predictions_jsonl):
     base = os.getcwd()
@@ -34,7 +35,7 @@ python {base}/SWE-bench-docker/run_evaluation.py
     --swe_bench_tasks {base}/{swe_bench_tasks}
     --skip_existing
     --predictions_path {predictions_jsonl}
-    --num_processes 5
+    --num_processes {NUM_EVAL_PROCS}
 """
     run_evals_cmd = " ".join([line.strip() for line in run_evals_cmd.split() if line.strip()])
     dump(run_evals_cmd)
@@ -128,7 +129,7 @@ def run_evals_on_dname(dname):
     dump(predictions_jsonl)
 
     log_dir = Path("logs") / dname.name
-    log_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True, parents=True)
     dump(log_dir)
 
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
@@ -187,7 +188,7 @@ def main():
     # plausible predictions which were selected.
     # Outputs a clean `all_preds.jsonl`, `results.json`, `logs/`
     # and copies over all markdown chat transcripts.
-    model_name_or_path = "full"
+    model_name_or_path = "lite-multi"
 
     preds_dir = Path("predictions") / model_name_or_path
     old(preds_dir)
