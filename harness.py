@@ -448,7 +448,6 @@ def process_instances(
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    threads = 1
     if threads > 1:
         process_one_instance_lox = lox.thread(threads)(process_one_instance)
         process_one_instance_func = process_one_instance_lox.scatter
