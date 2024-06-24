@@ -73,7 +73,12 @@ def load_predictions(paths, devin_only=False):
 
     predictions = dict()
     for fname in prediction_paths:
-        pred = json.loads(fname.read_text())
+        try:
+            pred = json.loads(fname.read_text())
+        except json.decoder.JSONDecodeError as err:
+            dump(fname)
+            raise err
+
         if "instance_id" not in pred:
             print("Skipping json without instance_id", fname)
             continue
@@ -199,7 +204,7 @@ def choose_predictions(dnames, model_name_or_path=None, copy_md=False, devin_onl
         if copy_md:
             pred_dname = Path("predictions")
             md_fname = pred_dname / res["dname"] / (inst + ".md")
-            assert md_fname.exists()
+            assert md_fname.exists(), md_fname
             new_md_fname = pred_dname / model_name_or_path / (inst + ".md")
             shutil.copyfile(md_fname, new_md_fname)
 

@@ -124,24 +124,24 @@ def run_tests(entry, model_patch=None, use_test_patch=False, model_name_or_path=
     }
 
     namespace = "aorwall"
-    log_dir = tempfile.TemporaryDirectory(dir="/tmp").name
-    timeout = 60
-    log_suffix = ""
+    with tempfile.TemporaryDirectory(dir="/tmp") as log_dir:
+        timeout = 60
+        log_suffix = ""
 
-    asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix))
+        asyncio.run(run_docker_evaluation(entry_instance, namespace, log_dir, timeout, log_suffix))
 
-    log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
-    if not log_fname.exists():
-        return None, ""
+        log_fname = Path(log_dir) / f"{instance_id}.{model_name_or_path}.eval.log"
+        if not log_fname.exists():
+            return None, ""
 
-    log_text = log_fname.read_text()
-    log_lines = log_text.splitlines()
-    log_lines = [line for line in log_lines if line.startswith(">>>>")]
-    print("\n".join(log_lines))
+        log_text = log_fname.read_text()
+        log_lines = log_text.splitlines()
+        log_lines = [line for line in log_lines if line.startswith(">>>>")]
+        print("\n".join(log_lines))
 
-    passed = ">>>>> All Tests Passed" in log_text
+        passed = ">>>>> All Tests Passed" in log_text
 
-    return passed, log_text
+        return passed, log_text
 
 
 def main_check_docker_images():

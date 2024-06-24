@@ -46,7 +46,7 @@ def files_in_patch(patch):
     return files
 
 
-def checkout_repo(entry, dname=None):
+def checkout_repo(git_tempdir, entry):
     """
     Clone the SWE Bench entry's git `repo` into `dname` at the `base_commit`.
     Make a tempdir if no `dname` provided.
@@ -57,12 +57,10 @@ def checkout_repo(entry, dname=None):
 
     print(repo_url, commit)
 
-    git_tempdir = checkout_repo_url_commit(repo_url, commit, dname)
-
-    return git_tempdir
+    checkout_repo_url_commit(git_tempdir, repo_url, commit)
 
 
-def checkout_repo_url_commit(url, commit, dname):
+def checkout_repo_url_commit(repo_dname, url, commit):
     """
     Clone the git `url` into `dname` at `commit`.
     Check a local cache of the bare repo to avoid pulling from github every time.
@@ -80,23 +78,12 @@ def checkout_repo_url_commit(url, commit, dname):
         cmd = f"git clone --bare {url} {bare_repo}"
         subprocess.run(cmd.split(), check=True)
 
-    if dname:
-        Path(dname).mkdir()
-        repo_dname = dname
-    else:
-        repo_dname = tempfile.TemporaryDirectory().name
-
     cmd = f"git clone {bare_repo} {repo_dname}"
     subprocess.run(cmd.split(), check=True)
 
     cmd = f"git -c advice.detachedHead=false -C {repo_dname} checkout {commit}"
     subprocess.run(cmd.split(), check=True)
 
-    # IGNORE = '*test*\n'
-    # ignore = Path(repo_dname) / '.aiderignore'
-    # ignore.write_text(IGNORE)
-
-    return repo_dname
 
 
 def show_problems(dataset):
@@ -175,6 +162,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
         auto_test=True,  # Automatically run the test_cmd after making changes
         test_cmd=test_cmd,
         # verbose=True,
+        edit_format="udiff",
     )
     coder.temperature = temperature
 
@@ -231,48 +219,52 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
         for model in models:
             dump(attempt, model)
 
-            git_tempdir = checkout_repo(entry)
-            dump(git_tempdir)
+            with tempfile.TemporaryDirectory() as git_tempdir:
+                dump(git_tempdir)
+                checkout_repo(git_tempdir, entry)
 
-            # Prepare the test command which will run the pre-existing tests
-            test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
+                # Prepare the test command which will run the pre-existing tests
+                test_cmd = lambda: run_pre_existing_tests(entry, git_tempdir)  # noqa: E731
 
-            # Get an instance of aider
-            coder = get_coder(
-                model,
-                git_tempdir,
-                chat_history_file,
-                test_cmd,
-                temperature,
-                oracle_files,
-            )
+                # Get an instance of aider
+                coder = get_coder(
+                    model,
+                    git_tempdir,
+                    chat_history_file,
+                    test_cmd,
+                    temperature,
+                    oracle_files,
+                )
 
-            dump(instance_id)
-            dump(gold_files)
+                dump(instance_id)
+                dump(gold_files)
 
-            # Tell aider to work on the `problem_statement`.
-            # This is the same as if you pasted it into a fresh chat with aider
-            # launched in the repo.
-            try:
-                coder.run(problem_statement)
-            except Exception as coder_err:
-                # swallow any exceptions during benchmarking
-                dump(coder_err)
-                continue
+                # Tell aider to work on the `problem_statement`.
+                # This is the same as if you pasted it into a fresh chat with aider
+                # launched in the repo.
+                try:
+                    coder.run(problem_statement)
+                except Exception as coder_err:
+                    # swallow any exceptions during benchmarking
+                    dump(coder_err)
+                    continue
 
-            # Take note of which files aider added to the chat for stats later
-            added_files = coder.get_inchat_relative_files()
+                # Take note of which files aider added to the chat for stats later
+                added_files = coder.get_inchat_relative_files()
 
-            dump(instance_id)
-            dump(gold_files)
-            dump(added_files)
+                if not added_files:
+                    coder.run("Which 3-5 files should I look at?")
 
-            # Keep track of API costs
-            cost += coder.total_cost
+                dump(instance_id)
+                dump(gold_files)
+                dump(added_files)
 
-            # Get the diff between the current state and the original commit
-            model_patch = diff_versus_commit(git_tempdir, base_commit)
-            dump(model_patch)
+                # Keep track of API costs
+                cost += coder.total_cost
+
+                # Get the diff between the current state and the original commit
+                model_patch = diff_versus_commit(git_tempdir, base_commit)
+                dump(model_patch)
 
             # Record the results for the logs
             result = dict(
@@ -339,54 +331,6 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
     out_fname.write_text(json.dumps(winner, indent=4))
 
 
-def main():
-    #
-    # Set the prefix to use in front of the predictions/ subdir name.
-    #
-    prefix = "lite025"
-    # prefix = "full-"
-    # prefix = "full025-"
-
-    #
-    # Configure 1 or more models to use to try and find plausible solutions
-    #
-    # models = ["openrouter/deepseek/deepseek-chat"]
-    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    # models = ["openrouter/anthropic/claude-3-opus"]
-    # models = ["gpt-4o"]
-    # models = ["gpt-4-1106-preview"]
-    models = ["openrouter/anthropic/claude-3.5-sonnet"]
-
-    # How many attempts per model to try and find a plausible solutions?
-    num_tries = 1
-
-    # What temperature to use during chat completions
-    temperature = 0.25
-
-    # Load the SWE Bench dataset
-    # dataset = get_full_dataset()
-    dataset = get_lite_dataset()
-
-    just_devin_570 = False
-
-    if just_devin_570:
-        # Filter it to the Devin 570
-        devin_insts = get_devin_instance_ids()
-        dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
-
-    # How many threads to use for attempting instances in parallel
-    threads = 10
-
-    # Any predictions/ dirs provided on the command line are treated
-    # as earlier, higher priority runs.  If a plausible solution was
-    # found for an instance already, we don't need to keep looking in
-    # this run.
-    prior_dnames = sys.argv[1:]
-
-    process_instances(
-        prefix, dataset, models, num_tries, temperature, threads, prior_dnames, just_devin_570
-    )
-
 
 def process_instances(
     prefix, dataset, models, num_tries, temperature, threads, prior_dnames, just_devin_570
@@ -440,8 +384,8 @@ def process_instances(
     remaining_instances = list(remaining_instances)
     random.shuffle(remaining_instances)
 
-    dump(len(remaining_instances))
     dump(sorted(remaining_instances))
+    dump(len(remaining_instances))
 
     print()
     print("press enter...")
@@ -479,6 +423,56 @@ def process_instances(
 
     if threads > 1:
         gather()
+
+
+def main():
+    #
+    # Set the prefix to use in front of the predictions/ subdir name.
+    #
+    # prefix = "lite025"
+    # prefix = "full-"
+    # prefix = "full025-"
+    prefix = "udiff"
+
+    #
+    # Configure 1 or more models to use to try and find plausible solutions
+    #
+    # models = ["openrouter/deepseek/deepseek-chat"]
+    # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
+    # models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["gpt-4o"]
+    # models = ["gpt-4-1106-preview"]
+    models = ["openrouter/anthropic/claude-3.5-sonnet"]
+
+    # How many attempts per model to try and find a plausible solutions?
+    num_tries = 1
+
+    # What temperature to use during chat completions
+    temperature = 0
+
+    # Load the SWE Bench dataset
+    # dataset = get_full_dataset()
+    dataset = get_lite_dataset()
+
+    just_devin_570 = False
+
+    if just_devin_570:
+        # Filter it to the Devin 570
+        devin_insts = get_devin_instance_ids()
+        dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
+
+    # How many threads to use for attempting instances in parallel
+    threads = 10
+
+    # Any predictions/ dirs provided on the command line are treated
+    # as earlier, higher priority runs.  If a plausible solution was
+    # found for an instance already, we don't need to keep looking in
+    # this run.
+    prior_dnames = sys.argv[1:]
+
+    process_instances(
+        prefix, dataset, models, num_tries, temperature, threads, prior_dnames, just_devin_570
+    )
 
 
 if __name__ == "__main__":

@@ -274,6 +274,7 @@ def main():
     total_plausible = 0
     resolved_plausible = 0
 
+    total_with_added = 0
     total_with_gold_attr = 0
     total_added_gold = 0
     gold_resolved = 0
@@ -300,6 +301,7 @@ def main():
                 resolved_plausible += 1
 
         if added_files:
+            total_with_added += 1
             added_timeline += str(len(added_files))
         else:
             added_timeline += "_"
@@ -342,6 +344,10 @@ def main():
 
         print()
 
+    dump(total_with_added)
+    pct_with_added = total_with_added / total * 100
+    dump(pct_with_added)
+    print()
     # print(timeline)
     # print(added_timeline)
     # print(repomap_timeline)
