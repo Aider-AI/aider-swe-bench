@@ -85,7 +85,6 @@ def checkout_repo_url_commit(repo_dname, url, commit):
     subprocess.run(cmd.split(), check=True)
 
 
-
 def show_problems(dataset):
     """
     Print out all the instance_id and problem_descriptions.
@@ -242,8 +241,19 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
                 # Tell aider to work on the `problem_statement`.
                 # This is the same as if you pasted it into a fresh chat with aider
                 # launched in the repo.
+                message = """Below is a real GitHub issue from a popular GitHub repository.
+The issue was filed some time ago.
+The repo has been checked out at the commit that existed at the moment the issue was filed.
+If you are already familiar with this repo, be cautious!
+You are working with an old version of the repo!
+Filenames, directory names, file contents, etc may be different than what you're used to.
+
+Propose changes to update the repo to fix the problem below.
+
+#"""
+                message += problem_statement
                 try:
-                    coder.run(problem_statement)
+                    coder.run(message)
                 except Exception as coder_err:
                     # swallow any exceptions during benchmarking
                     dump(coder_err)
@@ -253,7 +263,13 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
                 added_files = coder.get_inchat_relative_files()
 
                 if not added_files:
-                    coder.run("Which 3-5 files should I look at?")
+                    message = """You haven't named any files in this repo.
+Remember, this repo is checked out at quite an old commit.
+So the file layout and contents may be unfamiliar.
+
+Tell me: which 3-5 files from this repo should I look at to solve the problem?
+"""
+                    coder.run(message)
 
                 dump(instance_id)
                 dump(gold_files)
@@ -329,7 +345,6 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
 
     out_fname = out_dname / (instance_id + ".json")
     out_fname.write_text(json.dumps(winner, indent=4))
-
 
 
 def process_instances(
