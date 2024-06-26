@@ -163,6 +163,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
         test_cmd=test_cmd,
         # verbose=True,
         # edit_format="udiff",
+        max_chat_history_tokens=8*1024,
     )
     coder.temperature = temperature
 
@@ -453,17 +454,17 @@ def main():
     # prefix = "lite025"
     # prefix = "full-"
     # prefix = "full025-"
-    prefix = "fullcontext"
+    prefix = "8k8k"
 
     #
     # Configure 1 or more models to use to try and find plausible solutions
     #
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    # models = ["openrouter/anthropic/claude-3-opus"]
+    models = ["openrouter/anthropic/claude-3-opus"]
     # models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
-    models = ["openrouter/anthropic/claude-3.5-sonnet"]
+    # models = ["openrouter/anthropic/claude-3.5-sonnet"]
     # models = ["claude-3-5-sonnet-20240620"]
 
     # How many attempts per model to try and find a plausible solutions?

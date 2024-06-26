@@ -22,7 +22,7 @@ from utils import (
     old,
 )
 
-JUST_DEVIN_570 = False
+using_dataset = "lite"
 
 NUM_EVAL_PROCS = 5
 
@@ -123,7 +123,7 @@ def preds_to_jsonl(dname, predictions):
 def run_evals_on_dname(dname):
     dname = Path(dname)
 
-    predictions = load_predictions([dname], devin_only=JUST_DEVIN_570)
+    predictions = load_predictions([dname], devin_only=(using_dataset == "devin"))
 
     predictions_jsonl = preds_to_jsonl(dname, predictions)
     dump(predictions_jsonl)
@@ -196,7 +196,7 @@ def main():
 
     # Choose the 1st plausible pred or use the fallback logic for least bad pred
     predictions = choose_predictions(
-        dnames, model_name_or_path, copy_md=True, devin_only=JUST_DEVIN_570
+        dnames, model_name_or_path, copy_md=True, devin_only=(using_dataset == "devin")
     )
     if not predictions:
         print("No predictions")
@@ -259,8 +259,10 @@ def main():
         print(f"spent: ${spent:.2f}")
 
         # If configured to assume the Devin 570 need to be processed
-        if JUST_DEVIN_570:
+        if using_dataset == "devin":
             num_instances = len(get_devin_instance_ids())
+        elif using_dataset == "lite":
+            num_instances = 300
         else:
             num_instances = len(json.load(open(FULL_DATASET_FNAME)))
 
