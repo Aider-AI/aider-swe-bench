@@ -454,17 +454,17 @@ def main():
     # prefix = "lite025"
     # prefix = "full-"
     # prefix = "full025-"
-    prefix = "8k8k"
+    prefix = "terse-udiff"
 
     #
     # Configure 1 or more models to use to try and find plausible solutions
     #
     # models = ["openrouter/deepseek/deepseek-chat"]
     # models = ["gpt-4o", "openrouter/anthropic/claude-3-opus"]
-    models = ["openrouter/anthropic/claude-3-opus"]
+    # models = ["openrouter/anthropic/claude-3-opus"]
     # models = ["gpt-4o"]
     # models = ["gpt-4-1106-preview"]
-    # models = ["openrouter/anthropic/claude-3.5-sonnet"]
+    models = ["openrouter/anthropic/claude-3.5-sonnet"]
     # models = ["claude-3-5-sonnet-20240620"]
 
     # How many attempts per model to try and find a plausible solutions?
@@ -483,6 +483,8 @@ def main():
         # Filter it to the Devin 570
         devin_insts = get_devin_instance_ids()
         dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
+
+    #dataset = {"sympy__sympy-18532" : dataset["sympy__sympy-18532"]}
 
     # How many threads to use for attempting instances in parallel
     threads = 10
