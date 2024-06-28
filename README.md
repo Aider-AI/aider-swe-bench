@@ -49,7 +49,7 @@ This is a plausible solution, so the agent is done.
 Aider is configured
 with a test command to run all the pre-existing tests in the problem's repo.
 Aider is also configured
-to proceed with all its suggestioned actions
+to proceed with all its suggested actions
 without any user approval.
 
 In pseudo-code:
