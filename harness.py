@@ -11,6 +11,7 @@ import lox
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model, register_litellm_models
+from aider.repo import GitRepo
 
 from dump import dump
 from tests import run_tests
@@ -150,11 +151,13 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
     )
 
     dump(git_dname)
+    repo = GitRepo(io,  fnames=None, git_dname=git_dname,models=model.commit_message_models()) 
+
 
     coder = Coder.create(
         main_model=model,
         io=io,
-        git_dname=git_dname,
+        repo=repo,
         map_tokens=2048,  # Use 2k tokens for the repo map
         stream=False,
         auto_commits=False,  # Don't bother git committing changes
@@ -163,7 +166,7 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
         test_cmd=test_cmd,
         # verbose=True,
         # edit_format="udiff",
-        max_chat_history_tokens=8*1024,
+        # max_chat_history_tokens=8*1024,
     )
     coder.temperature = temperature
 
