@@ -14,7 +14,7 @@ from swebench.metrics.report import get_model_report
 from dump import dump  # noqa: F401
 from tests import remove_patches_to_tests, run_tests
 from utils import (
-    FULL_DATASET_FNAME,
+    LITE_DATASET_FNAME,
     choose_predictions,
     get_dataset,
     get_devin_instance_ids,
@@ -135,10 +135,10 @@ def run_evals_on_dname(dname):
     any_need_evals = any("resolved" not in pred for pred in predictions.values())
     any_need_evals = True
     if any_need_evals:
-        run_evals(FULL_DATASET_FNAME, str(log_dir), predictions_jsonl)
+        run_evals(LITE_DATASET_FNAME, str(log_dir), predictions_jsonl)
 
         model_name_or_path = list(predictions.values())[0]["model_name_or_path"]
-        report = get_report(FULL_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
+        report = get_report(LITE_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
         predictions = update_pred_json(predictions, report)
 
     return predictions_jsonl, log_dir
@@ -205,7 +205,7 @@ def main():
     dump(len(predictions))
 
     predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
-    report = get_report(FULL_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
+    report = get_report(LITE_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
     results_json = Path("predictions") / model_name_or_path / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
 
@@ -264,7 +264,7 @@ def main():
         elif using_dataset == "lite":
             num_instances = 300
         else:
-            num_instances = len(json.load(open(FULL_DATASET_FNAME)))
+            num_instances = len(json.load(open(LITE_DATASET_FNAME)))
 
         expected_cost = num_instances * avg_cost
         print(f"expected_cost: ${expected_cost:.2f}")

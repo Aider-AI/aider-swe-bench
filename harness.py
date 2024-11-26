@@ -11,6 +11,7 @@ import lox
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model, register_litellm_models
+from aider.repo import GitRepo
 
 from dump import dump
 from tests import run_tests
@@ -150,10 +151,12 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
     )
 
     dump(git_dname)
-
+    repo = GitRepo(io,  fnames=None, git_dname=git_dname,models=model.commit_message_models()) 
+    
     coder = Coder.create(
         main_model=model,
         io=io,
+        repo=repo,
         git_dname=git_dname,
         map_tokens=2048,  # Use 2k tokens for the repo map
         stream=False,
@@ -163,13 +166,13 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
         test_cmd=test_cmd,
         # verbose=True,
         # edit_format="udiff",
-        max_chat_history_tokens=8*1024,
+        # max_chat_history_tokens=8*1024,
     )
     coder.temperature = temperature
 
     # Take at most 4 steps before giving up.
     # Usually set to 5, but this reduces API costs.
-    coder.max_reflections = 4
+    coder.max_reflections = 5
 
     # Add announcement lines to the markdown chat log
     coder.show_announcements()
@@ -220,7 +223,7 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
         for model in models:
             dump(attempt, model)
 
-            with tempfile.TemporaryDirectory(dir="/mnt/aider") as git_tempdir:
+            with tempfile.TemporaryDirectory(dir="/tmp/mnt/aider") as git_tempdir:
                 dump(git_tempdir)
                 checkout_repo(git_tempdir, entry)
 
