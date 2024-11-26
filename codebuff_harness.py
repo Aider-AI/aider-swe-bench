@@ -1,5 +1,5 @@
 """
-Beta version of a  wrapper using PTY to execute Codebuff commands.
+Harness using PTY to execute Codebuff commands for SWE Bench. 
 """
 
 import os
@@ -15,6 +15,9 @@ from dump import dump
 from tests import run_tests
 from utils import get_lite_dataset
 import json
+
+# Global args variable to store command line arguments
+args = None
 
 def diff_versus_commit(git_dname, commit):
     """
@@ -90,7 +93,6 @@ async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
     print('codebuff terminated')
     return output
 
-
 def process_one_instance(entry, num_tries=1):
     """Process one instance from SWE Bench using codebuff."""
     instance_id = entry["instance_id"]
@@ -111,8 +113,10 @@ def process_one_instance(entry, num_tries=1):
         }
 
         print(f"Running codebuff in {git_tempdir}")
-        output = ""
-        # output = asyncio.run(execute_codebuff(problem_statement, options))
+        if args.dry_run:
+            output = "dry run, this is not actually calling Codebuff"
+        else:
+            output = asyncio.run(execute_codebuff(problem_statement, options))
         print(f"Codebuff output: {output}")
 
         # Run tests after codebuff makes changes
@@ -150,6 +154,12 @@ def checkout_repo(git_tempdir, entry):
 
 def main():
     """Process SWE Bench dataset using codebuff."""
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dry-run', action='store_true', help='Skip actual codebuff execution')
+    global args
+    args = parser.parse_args()
+    
     dataset = get_lite_dataset()
     for instance_id, entry in dataset.items():
         try:
