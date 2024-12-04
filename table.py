@@ -21,9 +21,10 @@ num_instances = len(items)
 dump(num_instances)
 
 name = {
-    "gpt-4o": "Aider with GPT-4o",
-    "openrouter/anthropic/claude-3-opus": "Aider with Opus",
-    "n/a": "Aider with GPT-4o",
+    "codebuff": "Codebuff",
+    # "gpt-4o": "Aider with GPT-4o",
+    # "openrouter/anthropic/claude-3-opus": "Aider with Opus",
+    # "n/a": "Aider with GPT-4o",
 }
 
 proposed = []
@@ -36,8 +37,8 @@ resolved_instances = set()
 
 for inst, pred in items:
     is_resolved = pred["resolved"]
-    model = pred.get("model", "n/a")
-    attempt = pred["try"]
+    model = pred.get("model", "codebuff")
+    attempt = pred.get("try", 0)
 
     model = name[model]
 
@@ -67,7 +68,7 @@ for key, count_p in sorted(counts_proposed.items()):
     num += 1
     attempt, model = key
     pct_p = count_p * 100 / num_proposed
-    pct_r = count_r * 100 / num_resolved
+    pct_r = count_r * 100 / num_resolved if num_resolved else 0
     pct_of_all = count_r / num_instances * 100
 
     pct_r_of_p = count_r / count_p * 100

@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import os 
 
 import lox
 from aider.coders import Coder
@@ -118,9 +119,11 @@ def run_pre_existing_tests(entry, git_dname):
     )
     # We were UNABLE to run tests
     if passed is None:
+        print("Tests failed to run")
         return
 
     if passed:
+        # print("Tests passed (but they were expected to)")
         return
 
     # Just keep the output after the (no-op) test patch applied,
@@ -152,12 +155,11 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
 
     dump(git_dname)
     repo = GitRepo(io,  fnames=None, git_dname=git_dname,models=model.commit_message_models()) 
-    
+        
     coder = Coder.create(
         main_model=model,
         io=io,
         repo=repo,
-        git_dname=git_dname,
         map_tokens=2048,  # Use 2k tokens for the repo map
         stream=False,
         auto_commits=False,  # Don't bother git committing changes
@@ -223,7 +225,7 @@ def process_one_instance(entry, num_tries, models, temperature, model_name_or_pa
         for model in models:
             dump(attempt, model)
 
-            with tempfile.TemporaryDirectory(dir="/tmp/mnt/aider") as git_tempdir:
+            with tempfile.TemporaryDirectory(dir="/tmp/mnt/codebuff") as git_tempdir:
                 dump(git_tempdir)
                 checkout_repo(git_tempdir, entry)
 
@@ -375,7 +377,7 @@ def process_instances(
 
     out_dname = PREDS_DNAME / models_slug
     if not out_dname.exists():
-        out_dname.mkdir()
+        os.makedirs(out_dname, exist_ok=True)
 
     dump(out_dname)
 

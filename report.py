@@ -196,7 +196,7 @@ def main():
 
     # Choose the 1st plausible pred or use the fallback logic for least bad pred
     predictions = choose_predictions(
-        dnames, model_name_or_path, copy_md=True, devin_only=(using_dataset == "devin")
+        dnames, model_name_or_path, copy_md=False, devin_only=(using_dataset == "devin")
     )
     if not predictions:
         print("No predictions")

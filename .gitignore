@@ -7,9 +7,9 @@ tmp*
 .DS_Store
 .venv
 .env
-.aider*
-predictions
-logs
+.codebuff*
+# predictions
+# logs
 chat-logs
 SWE-bench
 SWE-bench-docker

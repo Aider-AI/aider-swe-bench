@@ -15,6 +15,15 @@ from dump import dump
 from tests import run_tests
 from utils import get_lite_dataset
 import json
+from pathlib import Path
+import os
+from prompts import CODEBUFF_INSTRUCTION
+
+# Create temp directory for codebuff operations
+os.makedirs("/tmp/mnt/codebuff", exist_ok=True)
+
+PREDS_DNAME = Path("predictions")
+REPOS_DNAME = Path("repos")
 
 # Global args variable to store command line arguments
 args = None
@@ -48,8 +57,10 @@ async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
         last_read = asyncio.get_event_loop().time()
         
         print(f"starting codebuff", options["cwd"])
-        pty.write(f'codebuff . "please solve the problem specified in instructions.md. don\'t write or run any tests to solve this problem, it should be done in just one-shot."\n'.encode())
+        pty.write(f'codebuff . "{CODEBUFF_INSTRUCTION}"\n'.encode())
 
+        dir_name = options["cwd"].split('/')[-1]
+        # print(f"starting codebuff", dir_name)
         while True:
             current_time = asyncio.get_event_loop().time()
             time_since_last_read = current_time - last_read
@@ -60,8 +71,8 @@ async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
             # if time_since_last_read > 30: # Increased timeout for git operations
             #     break
 
-            # if time_since_last_read > 10 and "Wait..." not in output and "file:" not in output:
-            #     break
+            if time_since_last_read > 30 and f'{dir_name} >' in decoded:
+                break
 
             if not select.select([pty.fd], [], [], 1.0)[0]:
                 await asyncio.sleep(0)
@@ -86,17 +97,24 @@ async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
             await asyncio.sleep(0)
 
     finally:
-        print('codebuff to be terminated')
         if pty and pty.isalive():
             pty.terminate()
 
-    print('codebuff terminated')
     return output
 
-def process_one_instance(entry, num_tries=1):
+def process_one_instance(entry, num_tries=1, model_name_or_path="codebuff", run_id=None):
     """Process one instance from SWE Bench using codebuff."""
     instance_id = entry["instance_id"]
     base_commit = entry["base_commit"]
+
+    # Use run_id subdirectory if specified
+    out_dname = PREDS_DNAME / model_name_or_path
+    if run_id:
+        out_dname = out_dname / run_id
+    out_fname = out_dname / (instance_id + ".json")
+    if out_fname.exists():
+        print(f"Skipping {instance_id} because prediction already exists")
+        return
 
     print("=" * 60)
     dump(instance_id)
@@ -104,7 +122,7 @@ def process_one_instance(entry, num_tries=1):
     problem_statement = entry["problem_statement"]
     print(problem_statement)
 
-    with tempfile.TemporaryDirectory(dir="/tmp/mnt/aider") as git_tempdir:
+    with tempfile.TemporaryDirectory(dir="/tmp/mnt/codebuff") as git_tempdir:
         dump(git_tempdir)
         checkout_repo(git_tempdir, entry)
 
@@ -117,27 +135,50 @@ def process_one_instance(entry, num_tries=1):
             output = "dry run, this is not actually calling Codebuff"
         else:
             output = asyncio.run(execute_codebuff(problem_statement, options))
-        print(f"Codebuff output: {output}")
+        print(f"Codebuff finished")
 
         # Run tests after codebuff makes changes
         # passed, test_output = run_tests(entry, use_test_patch=True)
         model_patch = diff_versus_commit(git_tempdir, entry["base_commit"])
-        passed, output = run_tests(
+        passed, test_output = run_tests(
             entry,
             model_patch=model_patch,
             use_test_patch=False,
         )
+            
+        # Record the results for the logs
+        result = dict(
+            # Required args for running eval tests
+            instance_id=instance_id,
+            model_name_or_path=model_name_or_path,
+            model_patch=model_patch,
+            # For computing stats
+            cost=0,  # Codebuff doesn't track costs this way
+            edit_outcome=True,  # Codebuff always attempts edits
+            lint_outcome=True,  # No linting in Codebuff
+            test_outcome=passed
+        )
+        
+        # Save prediction to JSON file
+        out_dname = PREDS_DNAME / model_name_or_path
+        out_dname.mkdir(exist_ok=True, parents=True)
+        out_fname = out_dname / (instance_id + ".json")
+        out_fname.write_text(json.dumps(result, indent=4))
+                
+        # # We were UNABLE to run tests
+        # if passed is None:
+        #     print("Tests failed to run")
+        #     return
 
-        if passed:
-            print("Tests passed!")
-        else:
-            print("Tests failed:")
-            print(test_output)
+        # if passed:
+        #     print("Tests passed (but they were expected to)")
+        #     return
 
 
 def checkout_repo(git_tempdir, entry):
     """
     Clone the SWE Bench entry's git repo into git_tempdir at the base_commit.
+    Make a tempdir if no git_tempdir provided.
     """
     github_url = "https://github.com/"
     repo_url = github_url + entry["repo"]
@@ -145,7 +186,19 @@ def checkout_repo(git_tempdir, entry):
 
     print(repo_url, commit)
 
-    cmd = f"git clone {repo_url} {git_tempdir}"
+    # Extract repo name from URL
+    repo_name = repo_url.split("/")[-1].split(".")[0]
+    repo_name += ".git"
+
+    # Create repos directory if needed
+    REPOS_DNAME.mkdir(exist_ok=True)
+    bare_repo = REPOS_DNAME / repo_name
+
+    if not bare_repo.exists():
+        cmd = f"git clone --bare {repo_url} {bare_repo}"
+        subprocess.run(cmd.split(), check=True)
+
+    cmd = f"git clone {bare_repo} {git_tempdir}"
     subprocess.run(cmd.split(), check=True)
 
     cmd = f"git -c advice.detachedHead=false -C {git_tempdir} checkout {commit}"
@@ -155,15 +208,24 @@ def checkout_repo(git_tempdir, entry):
 def main():
     """Process SWE Bench dataset using codebuff."""
     import argparse
+    from datetime import datetime
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true', help='Skip actual codebuff execution')
+    parser.add_argument('--model-name', default='codebuff', help='Model name for predictions folder')
+    parser.add_argument('--run-id', help='Run ID for organizing outputs (default: timestamp)')
     global args
     args = parser.parse_args()
+    
+    # Generate timestamp-based run ID if not specified
+    run_id = args.run_id
+    if not run_id:
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     dataset = get_lite_dataset()
     for instance_id, entry in dataset.items():
         try:
-            process_one_instance(entry)
+            process_one_instance(entry, model_name_or_path=args.model_name, run_id=run_id)
         except Exception as e:
             print(f"Error processing {instance_id}: {e}")
 
