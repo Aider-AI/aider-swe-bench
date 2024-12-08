@@ -128,7 +128,7 @@ def run_evals_on_dname(dname):
     predictions_jsonl = preds_to_jsonl(dname, predictions)
     dump(predictions_jsonl)
 
-    log_dir = Path("logs") / dname.name
+    log_dir = Path("logs") / "codebuff" / dname.name
     log_dir.mkdir(exist_ok=True, parents=True)
     dump(log_dir)
 

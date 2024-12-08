@@ -17,7 +17,7 @@ from utils import get_lite_dataset
 import json
 from pathlib import Path
 import os
-from prompts import CODEBUFF_INSTRUCTION
+from prompts import CODEBUFF_INSTRUCTION, CODEBUFF_PLANNING_INSTRUCTION
 
 # Create temp directory for codebuff operations
 os.makedirs("/tmp/mnt/codebuff", exist_ok=True)
@@ -37,7 +37,7 @@ def diff_versus_commit(git_dname, commit):
     diff_output = subprocess.check_output(diff_cmd.split()).decode()
     return diff_output
 
-async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
+async def execute_codebuff(instructions: str, options: Dict[str, str], prompt: str) -> str:
     """Execute a Codebuff command using PTY"""
     output = ""
     shell = "zsh"  # Assuming Unix-like system since PTY is required
@@ -57,19 +57,15 @@ async def execute_codebuff(instructions: str, options: Dict[str, str]) -> str:
         last_read = asyncio.get_event_loop().time()
         
         print(f"starting codebuff", options["cwd"])
-        pty.write(f'codebuff . "{CODEBUFF_INSTRUCTION}"\n'.encode())
+        pty.write(f'codebuff . "{prompt}"\n'.encode())
 
         dir_name = options["cwd"].split('/')[-1]
-        # print(f"starting codebuff", dir_name)
         while True:
             current_time = asyncio.get_event_loop().time()
             time_since_last_read = current_time - last_read
 
             if not pty.isalive():
                 break
-
-            # if time_since_last_read > 30: # Increased timeout for git operations
-            #     break
 
             if time_since_last_read > 30 and f'{dir_name} >' in decoded:
                 break
@@ -130,12 +126,19 @@ def process_one_instance(entry, num_tries=1, model_name_or_path="codebuff", run_
             "cwd": git_tempdir,
         }
 
-        print(f"Running codebuff in {git_tempdir}")
+        print(f"Running codebuff planning in {git_tempdir}")
         if args.dry_run:
             output = "dry run, this is not actually calling Codebuff"
         else:
-            output = asyncio.run(execute_codebuff(problem_statement, options))
-        print(f"Codebuff finished")
+            # First run planning step
+            output = asyncio.run(execute_codebuff(problem_statement, options, CODEBUFF_PLANNING_INSTRUCTION))
+            print(f"Codebuff planning finished")
+            
+            # Then run implementation step
+            print(f"Running codebuff implementation in {git_tempdir}")
+            output = asyncio.run(execute_codebuff(problem_statement, options, CODEBUFF_INSTRUCTION))
+            
+            print(f"Codebuff implementation finished")
 
         # Run tests after codebuff makes changes
         # passed, test_output = run_tests(entry, use_test_patch=True)
@@ -160,9 +163,7 @@ def process_one_instance(entry, num_tries=1, model_name_or_path="codebuff", run_
         )
         
         # Save prediction to JSON file
-        out_dname = PREDS_DNAME / model_name_or_path
         out_dname.mkdir(exist_ok=True, parents=True)
-        out_fname = out_dname / (instance_id + ".json")
         out_fname.write_text(json.dumps(result, indent=4))
                 
         # # We were UNABLE to run tests
@@ -213,7 +214,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true', help='Skip actual codebuff execution')
     parser.add_argument('--model-name', default='codebuff', help='Model name for predictions folder')
-    parser.add_argument('--run-id', help='Run ID for organizing outputs (default: timestamp)')
+    parser.add_argument('--run-id', help='Run ID for organizing outputs (default: current timestamp)')
     global args
     args = parser.parse_args()
     
