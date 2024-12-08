@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-24970",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/colors.py b/lib/matplotlib/colors.py\nindex 2d3072da04..9a4bbdcedb 100644\n--- a/lib/matplotlib/colors.py\n+++ b/lib/matplotlib/colors.py\n@@ -726,10 +726,9 @@ class Colormap:\n                 np.clip(xa, -1, self.N, out=xa)\n                 xa = xa.astype(int)\n         # Set the over-range indices before the under-range;\n-        # otherwise the under-range values get converted to over-range.\n-        xa[xa > self.N - 1] = self._i_over\n-        xa[xa < 0] = self._i_under\n-        xa[mask_bad] = self._i_bad\n+        # otherwise the under-range values get converted to over-range.            xa[xa > self.N - 1] = np.array(self._i_over).astype(xa.dtype)\n+            xa[xa < 0] = np.array(self._i_under).astype(xa.dtype)\n+            xa[mask_bad] = np.array(self._i_bad).astype(xa.dtype)\n \n         lut = self._lut\n         if bytes:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

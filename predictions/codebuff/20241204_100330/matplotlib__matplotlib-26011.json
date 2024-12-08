@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-26011",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/axes/_base.py b/lib/matplotlib/axes/_base.py\nindex 9c2ba63901..fba66e5df8 100644\n--- a/lib/matplotlib/axes/_base.py\n+++ b/lib/matplotlib/axes/_base.py\n@@ -3643,7 +3643,16 @@ class _AxesBase(martist.Artist):\n             if right is not None:\n                 raise TypeError(\"Cannot pass both 'right' and 'xmax'\")\n             right = xmax\n-        return self.xaxis._set_lim(left, right, emit=emit, auto=auto)\n+        self.xaxis._set_lim(left, right, emit=False, auto=auto)\n+        if emit:\n+            # Call all of the other x-axes that are shared with this one\n+            for other in self._shared_x_axes.get_siblings(self):\n+                if other is not self:\n+                    other.set_xlim(self.viewLim.intervalx,\n+                                 emit=False, auto=auto)\n+        # Always trigger the callback even if emit is False\n+        self.callbacks.process('xlim_changed', self)\n+        return self.get_xlim()\n \n     get_xscale = _axis_method_wrapper(\"xaxis\", \"get_scale\")\n     set_xscale = _axis_method_wrapper(\"xaxis\", \"_set_axes_scale\")\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

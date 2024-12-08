@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15738",
+    "model_name_or_path": "codebuff",
+    "model_patch": "",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

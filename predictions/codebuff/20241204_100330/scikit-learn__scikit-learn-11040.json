@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-11040",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/neighbors/base.py b/sklearn/neighbors/base.py\nindex 3e5e729c2..66026bb0d 100644\n--- a/sklearn/neighbors/base.py\n+++ b/sklearn/neighbors/base.py\n@@ -107,6 +107,19 @@ class NeighborsBase(six.with_metaclass(ABCMeta, BaseEstimator)):\n                  algorithm='auto', leaf_size=30, metric='minkowski',\n                  p=2, metric_params=None, n_jobs=1):\n \n+        if n_neighbors is not None:\n+            if not isinstance(n_neighbors, (int, np.integer)):\n+                # Try to convert to integer\n+                try:\n+                    n_neighbors_int = int(n_neighbors)\n+                    if n_neighbors_int != n_neighbors:\n+                        raise ValueError(\n+                            \"n_neighbors does not take floating point values\")\n+                    n_neighbors = n_neighbors_int\n+                except ValueError:\n+                    raise ValueError(\n+                        \"n_neighbors does not take floating point values\")\n+\n         self.n_neighbors = n_neighbors\n         self.radius = radius\n         self.algorithm = algorithm\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

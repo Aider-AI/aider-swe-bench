@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12286",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/checks/translation.py b/django/core/checks/translation.py\nindex 138ed07ff8..42591cdf02 100644\n--- a/django/core/checks/translation.py\n+++ b/django/core/checks/translation.py\n@@ -56,6 +56,16 @@ def check_setting_languages_bidi(app_configs, **kwargs):\n def check_language_settings_consistent(app_configs, **kwargs):\n     \"\"\"Error if language settings are not consistent with each other.\"\"\"\n     available_tags = {i for i, _ in settings.LANGUAGES} | {'en-us'}\n-    if settings.LANGUAGE_CODE not in available_tags:\n-        return [E004]\n-    return []\n+    lang_code = settings.LANGUAGE_CODE\n+    \n+    # Check if exact language code exists\n+    if lang_code in available_tags:\n+        return []\n+        \n+    # For sublanguages (e.g. 'de-at'), check if base language ('de') exists\n+    if '-' in lang_code:\n+        base_lang = lang_code.split('-')[0]\n+        if base_lang in {tag.split('-')[0] for tag in available_tags}:\n+            return []\n+            \n+    return [E004]\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

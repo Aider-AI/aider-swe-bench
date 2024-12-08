@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-8365",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/tmpdir.py b/src/_pytest/tmpdir.py\nindex 29c7e19d7..23ef6632d 100644\n--- a/src/_pytest/tmpdir.py\n+++ b/src/_pytest/tmpdir.py\n@@ -148,13 +148,22 @@ class TempdirFactory:\n         return py.path.local(self._tmppath_factory.getbasetemp().resolve())\n \n \n+def _sanitize_username(username: Optional[str]) -> Optional[str]:\n+    \"\"\"Sanitize the username for use in file paths.\n+    \n+    Replace any characters that are unsafe for file paths with '_'.\n+    \"\"\"\n+    if username is None:\n+        return None\n+    return re.sub(r'[\\\\/:*?\"<>|]', '_', username)\n+\n def get_user() -> Optional[str]:\n     \"\"\"Return the current user name, or None if getuser() does not work\n     in the current environment (see #1010).\"\"\"\n     import getpass\n \n     try:\n-        return getpass.getuser()\n+        return _sanitize_username(getpass.getuser())\n     except (ImportError, KeyError):\n         return None\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

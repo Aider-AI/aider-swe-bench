@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-16408",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py\nindex a82ed23dbb..ce0ebd5fff 100644\n--- a/django/db/models/query_utils.py\n+++ b/django/db/models/query_utils.py\n@@ -405,6 +405,8 @@ class FilteredRelation:\n             raise ValueError(\"condition argument must be a Q() instance.\")\n         self.condition = condition\n         self.path = []\n+        # Store the original relation path for proper object type resolution\n+        self.original_path = relation_name.split(LOOKUP_SEP)\n \n     def __eq__(self, other):\n         if not isinstance(other, self.__class__):\n@@ -432,4 +434,11 @@ class FilteredRelation:\n         # Resolve the condition in Join.filtered_relation.\n         query = compiler.query\n         where = query.build_filtered_relation_q(self.condition, reuse=set(self.path))\n+        # Ensure proper model resolution for multi-level relations\n+        if hasattr(query, 'select') and self.original_path:\n+            for select in query.select:\n+                if (hasattr(select, 'target') and \n+                    isinstance(select.target, FilteredRelation) and\n+                    select.target.relation_name == self.relation_name):\n+                    select.target.path = self.original_path\n         return compiler.compile(where)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23476",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/backends/backend_macosx.py b/lib/matplotlib/backends/backend_macosx.py\nindex 700d1d4c58..72198e9894 100644\n--- a/lib/matplotlib/backends/backend_macosx.py\n+++ b/lib/matplotlib/backends/backend_macosx.py\n@@ -94,7 +94,12 @@ class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):\n \n     def resize(self, width, height):\n         # Size from macOS is logical pixels, dpi is physical.\n-        scale = self.figure.dpi / self.device_pixel_ratio\n+        # On M1 Macs, we need to handle the device pixel ratio correctly\n+        # to avoid DPI doubling during unpickling\n+        if hasattr(self, '_is_unpickling'):\n+            scale = 1.0\n+        else:\n+            scale = self.figure.dpi / self.device_pixel_ratio\n         width /= scale\n         height /= scale\n         self.figure.set_size_inches(width, height, forward=False)\ndiff --git a/lib/matplotlib/figure.py b/lib/matplotlib/figure.py\nindex c55864243a..97c630d775 100644\n--- a/lib/matplotlib/figure.py\n+++ b/lib/matplotlib/figure.py\n@@ -3045,6 +3045,8 @@ class Figure(FigureBase):\n \n         # re-initialise some of the unstored state information\n         FigureCanvasBase(self)  # Set self.canvas.\n+        if hasattr(self.canvas, '_is_unpickling'):\n+            self.canvas._is_unpickling = True\n \n         if restore_to_pylab:\n             # lazy import to avoid circularity\n@@ -3056,6 +3058,9 @@ class Figure(FigureBase):\n             pylab_helpers.Gcf._set_new_active_manager(mgr)\n             plt.draw_if_interactive()\n \n+        if hasattr(self.canvas, '_is_unpickling'):\n+            self.canvas._is_unpickling = False\n+\n         self.stale = True\n \n     def add_axobserver(self, func):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

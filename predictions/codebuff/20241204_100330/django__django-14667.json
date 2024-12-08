@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14667",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/query.py b/django/db/models/query.py\nindex 71a52fb754..32a1c34479 100644\n--- a/django/db/models/query.py\n+++ b/django/db/models/query.py\n@@ -1221,7 +1221,14 @@ class QuerySet:\n         if fields == (None,):\n             clone.query.clear_deferred_loading()\n         else:\n-            clone.query.add_deferred_loading(fields)\n+            # If only() was called, we need to preserve the deferred state\n+            # from that call and add these fields to it\n+            if clone.query.deferred_loading[1]:  # True means only() was called\n+                existing = {f.name for f in self.model._meta.fields \n+                          if f.name not in clone.query.deferred_loading[0]}\n+                clone.query.add_deferred_loading(fields + tuple(existing))\n+            else:\n+                clone.query.add_deferred_loading(fields)\n         return clone\n \n     def only(self, *fields):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "pydata__xarray-4493",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/xarray/core/merge.py b/xarray/core/merge.py\nindex d29a9e1f..7ba1e354 100644\n--- a/xarray/core/merge.py\n+++ b/xarray/core/merge.py\n@@ -921,6 +921,9 @@ def dataset_update_method(\n         other = dict(other)\n         for key, value in other.items():\n             if isinstance(value, DataArray):\n+                # Preserve dask chunking by avoiding compute\n+                if value.chunks is not None:\n+                    value = value.copy(deep=False)\n                 # drop conflicting coordinates\n                 coord_names = [\n                     c\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

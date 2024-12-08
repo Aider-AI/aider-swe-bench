@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-13773",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/matrices/expressions/matexpr.py b/sympy/matrices/expressions/matexpr.py\nindex 92627132e9..290186719f 100644\n--- a/sympy/matrices/expressions/matexpr.py\n+++ b/sympy/matrices/expressions/matexpr.py\n@@ -112,6 +112,8 @@ def __mul__(self, other):\n     @_sympifyit('other', NotImplemented)\n     @call_highest_priority('__rmul__')\n     def __matmul__(self, other):\n+        if not hasattr(other, 'is_Matrix') or not other.is_Matrix:\n+            raise ValueError(\"Scalar operands are not allowed, use '*' instead\")\n         return MatMul(self, other).doit()\n \n     @_sympifyit('other', NotImplemented)\n@@ -122,6 +124,8 @@ def __rmul__(self, other):\n     @_sympifyit('other', NotImplemented)\n     @call_highest_priority('__mul__')\n     def __rmatmul__(self, other):\n+        if not hasattr(other, 'is_Matrix') or not other.is_Matrix:\n+            raise ValueError(\"Scalar operands are not allowed, use '*' instead\")\n         return MatMul(other, self).doit()\n \n     @_sympifyit('other', NotImplemented)\ndiff --git a/sympy/matrices/tests/test_interactions.py b/sympy/matrices/tests/test_interactions.py\nindex 7bb0d7991c..d45dda8e86 100644\n--- a/sympy/matrices/tests/test_interactions.py\n+++ b/sympy/matrices/tests/test_interactions.py\n@@ -49,6 +49,11 @@ def test_matrix_symbol_MM():\n     Y = eye(3) + X\n     assert Y[1, 1] == 1 + X[1, 1]\n \n+def test_matmul_scalar():\n+    X = MatrixSymbol('X', 3, 3)\n+    raises(ValueError, lambda: 2 @ X)\n+    raises(ValueError, lambda: X @ 2)\n+\n \n def test_matrix_symbol_vector_matrix_multiplication():\n     A = MM * SV\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

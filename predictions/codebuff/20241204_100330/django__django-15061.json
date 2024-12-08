@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15061",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/widgets.py b/django/forms/widgets.py\nindex 00c19e2c55..f88cc876c1 100644\n--- a/django/forms/widgets.py\n+++ b/django/forms/widgets.py\n@@ -849,8 +849,6 @@ class MultiWidget(Widget):\n         return context\n \n     def id_for_label(self, id_):\n-        if id_:\n-            id_ += '_0'\n         return id_\n \n     def value_from_datadict(self, data, files, name):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

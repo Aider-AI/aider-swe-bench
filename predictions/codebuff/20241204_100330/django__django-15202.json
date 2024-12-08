@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15202",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/fields.py b/django/forms/fields.py\nindex 65d6a9ec82..be00a7fb3a 100644\n--- a/django/forms/fields.py\n+++ b/django/forms/fields.py\n@@ -687,10 +687,10 @@ class URLField(CharField):\n             \"\"\"\n             try:\n                 return list(urlsplit(url))\n-            except ValueError:\n+            except ValueError as e:\n                 # urlparse.urlsplit can raise a ValueError with some\n-                # misformatted URLs.\n-                raise ValidationError(self.error_messages['invalid'], code='invalid')\n+                # misformatted URLs, including invalid IPv6 URLs.\n+                raise ValidationError(self.error_messages['invalid'], code='invalid') from e\n \n         value = super().to_python(value)\n         if value:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "pylint-dev__pylint-7080",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/pylint/lint/expand_modules.py b/pylint/lint/expand_modules.py\nindex 5cacc0371..144f7b14f 100644\n--- a/pylint/lint/expand_modules.py\n+++ b/pylint/lint/expand_modules.py\n@@ -53,10 +53,11 @@ def _is_ignored_file(\n     ignore_list_paths_re: list[Pattern[str]],\n ) -> bool:\n     basename = os.path.basename(element)\n+    element_path = os.path.normpath(element)\n     return (\n         basename in ignore_list\n         or _is_in_ignore_list_re(basename, ignore_list_re)\n-        or _is_in_ignore_list_re(element, ignore_list_paths_re)\n+        or _is_in_ignore_list_re(element_path, ignore_list_paths_re)\n     )\n \n \n@@ -140,9 +141,9 @@ def expand_modules(\n             ):\n                 if filepath == subfilepath:\n                     continue\n-                if _is_in_ignore_list_re(\n-                    os.path.basename(subfilepath), ignore_list_re\n-                ) or _is_in_ignore_list_re(subfilepath, ignore_list_paths_re):\n+                if _is_ignored_file(\n+                    subfilepath, ignore_list, ignore_list_re, ignore_list_paths_re\n+                ):\n                     continue\n \n                 modpath = _modpath_from_file(\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

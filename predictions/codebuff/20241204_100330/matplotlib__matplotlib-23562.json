@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23562",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/mpl_toolkits/mplot3d/art3d.py b/lib/mpl_toolkits/mplot3d/art3d.py\nindex 8fe6e7a9c1..f7ec818c18 100644\n--- a/lib/mpl_toolkits/mplot3d/art3d.py\n+++ b/lib/mpl_toolkits/mplot3d/art3d.py\n@@ -700,6 +700,8 @@ class Poly3DCollection(PolyCollection):\n         and _edgecolors properties.\n         \"\"\"\n         super().__init__(verts, *args, **kwargs)\n+        # Initialize _facecolors2d to match the 3D facecolors\n+        self._facecolors2d = PolyCollection.get_facecolor(self)\n         if isinstance(verts, np.ndarray):\n             if verts.ndim != 3:\n                 raise ValueError('verts must be a list of (N, 3) array-like')\n@@ -867,6 +869,9 @@ class Poly3DCollection(PolyCollection):\n         self.stale = True\n \n     def get_facecolor(self):\n+        # Return 3D facecolors if 2D not yet computed\n+        if not hasattr(self, '_facecolors2d'):\n+            return self._facecolor3d\n         return self._facecolors2d\n \n     def get_edgecolor(self):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

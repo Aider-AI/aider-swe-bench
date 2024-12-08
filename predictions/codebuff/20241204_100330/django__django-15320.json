@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15320",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/expressions.py b/django/db/models/expressions.py\nindex 6f26dff0e0..201e4832f2 100644\n--- a/django/db/models/expressions.py\n+++ b/django/db/models/expressions.py\n@@ -1150,6 +1150,7 @@ class Subquery(BaseExpression, Combinable):\n     def __init__(self, queryset, output_field=None, **extra):\n         # Allow the usage of both QuerySet and sql.Query objects.\n         self.query = getattr(queryset, 'query', queryset)\n+        self.query.subquery = True\n         self.extra = extra\n         super().__init__(output_field)\n \ndiff --git a/django/db/models/sql/subqueries.py b/django/db/models/sql/subqueries.py\nindex b1e5d2f5b7..379dad76b5 100644\n--- a/django/db/models/sql/subqueries.py\n+++ b/django/db/models/sql/subqueries.py\n@@ -11,6 +11,14 @@ from django.db.models.sql.query import Query\n __all__ = ['DeleteQuery', 'UpdateQuery', 'InsertQuery', 'AggregateQuery']\n \n \n+class Subquery(Query):\n+    \"\"\"\n+    A subquery that can be used in other queries through the __in lookup.\n+    \"\"\"\n+    def __init__(self, *args, **kwargs):\n+        super().__init__(*args, **kwargs)\n+        self.query.subquery = True\n+\n class DeleteQuery(Query):\n     \"\"\"A DELETE SQL query.\"\"\"\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

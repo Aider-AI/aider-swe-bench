@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-11897",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/latex.py b/sympy/printing/latex.py\nindex 1edc712358..cdbc5d3592 100644\n--- a/sympy/printing/latex.py\n+++ b/sympy/printing/latex.py\n@@ -361,6 +361,13 @@ def _print_Mul(self, expr):\n         separator = self._settings['mul_symbol_latex']\n         numbersep = self._settings['mul_symbol_latex_numbers']\n \n+        # Special case for exp(-x) to match pretty printer\n+        from sympy import exp\n+        if len(expr.args) == 2 and expr.args[0] == exp(1) and expr.args[1].is_Pow and expr.args[1].exp.is_negative:\n+            base = expr.args[1].base\n+            exp_arg = -expr.args[1].exp\n+            return r\"e^{-%s}\" % self._print(base)\n+\n         def convert(expr):\n             if not expr.is_Mul:\n                 return str(self._print(expr))\n@@ -403,9 +410,9 @@ def convert(expr):\n                     and ldenom <= 2 and not \"^\" in sdenom:\n                 # handle short fractions\n                 if self._needs_mul_brackets(numer, last=False):\n-                    tex += r\"\\left(%s\\right) / %s\" % (snumer, sdenom)\n+                    tex += r\"\\frac{%s}{%s}\" % (snumer, sdenom)\n                 else:\n-                    tex += r\"%s / %s\" % (snumer, sdenom)\n+                    tex += r\"\\frac{%s}{%s}\" % (snumer, sdenom)\n             elif len(snumer.split()) > ratio*ldenom:\n                 # handle long fractions\n                 if self._needs_mul_brackets(numer, last=True):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

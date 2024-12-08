@@ -1,0 +1,9 @@
+{
+    "instance_id": "psf__requests-2148",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/requests/packages/urllib3/response.py b/requests/packages/urllib3/response.py\nindex 7e0d47fa..393eb8bb 100644\n--- a/requests/packages/urllib3/response.py\n+++ b/requests/packages/urllib3/response.py\n@@ -1,5 +1,6 @@\n import zlib\n import io\n+import socket\n from socket import timeout as SocketTimeout\n \n from ._collections import HTTPHeaderDict\n@@ -197,9 +198,9 @@ class HTTPResponse(io.IOBase):\n                 # there is yet no clean way to get at it from this context.\n                 raise ReadTimeoutError(self._pool, None, 'Read timed out.')\n \n-            except BaseSSLError as e:\n+            except (socket.error, BaseSSLError) as e:\n                 # FIXME: Is there a better way to differentiate between SSLErrors?\n-                if not 'read operation timed out' in str(e):  # Defensive:\n+                if isinstance(e, BaseSSLError) and not 'read operation timed out' in str(e):\n                     # This shouldn't happen but just in case we're missing an edge\n                     # case, let's avoid swallowing SSL errors.\n                     raise\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

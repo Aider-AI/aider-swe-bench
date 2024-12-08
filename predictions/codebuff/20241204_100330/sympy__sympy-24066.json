@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-24066",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/physics/units/dimensions.py b/sympy/physics/units/dimensions.py\nindex 0ff7e4fd0a..6979e369fb 100644\n--- a/sympy/physics/units/dimensions.py\n+++ b/sympy/physics/units/dimensions.py\n@@ -409,6 +409,11 @@ def _get_dimensional_dependencies_for_name(self, dimension):\n                         return {}\n                     else:\n                         raise TypeError(\"The input argument for the function {} must be dimensionless or have dimensions of angle.\".format(dimension.func))\n+                elif dimension.name.func.__name__ == 'exp':\n+                    if all(item == {} for item in dicts):\n+                        return {}\n+                    else:\n+                        raise TypeError(\"The input argument for the exponential function must be dimensionless.\")\n                 else:\n                     if all(item == {} for item in dicts):\n                         return {}\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14580",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/serializer.py b/django/db/migrations/serializer.py\nindex e19c881cda..dc1e1f74f1 100644\n--- a/django/db/migrations/serializer.py\n+++ b/django/db/migrations/serializer.py\n@@ -273,7 +273,7 @@ class TupleSerializer(BaseSequenceSerializer):\n class TypeSerializer(BaseSerializer):\n     def serialize(self):\n         special_cases = [\n-            (models.Model, \"models.Model\", []),\n+            (models.Model, \"models.Model\", [\"from django.db import models\"]),\n             (type(None), 'type(None)', []),\n         ]\n         for case, string, imports in special_cases:\n@@ -283,6 +283,8 @@ class TypeSerializer(BaseSerializer):\n             module = self.value.__module__\n             if module == builtins.__name__:\n                 return self.value.__name__, set()\n+            elif module == \"django.db.models\":\n+                return \"models.%s\" % self.value.__name__, {\"from django.db import models\"}\n             else:\n                 return \"%s.%s\" % (module, self.value.__qualname__), {\"import %s\" % module}\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

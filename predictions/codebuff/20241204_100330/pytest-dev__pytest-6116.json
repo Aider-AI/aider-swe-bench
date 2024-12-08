@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-6116",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/config/argparsing.py b/src/_pytest/config/argparsing.py\nindex 9b526ff3e..393c29438 100644\n--- a/src/_pytest/config/argparsing.py\n+++ b/src/_pytest/config/argparsing.py\n@@ -298,6 +298,16 @@ class OptionGroup:\n         self.description = description\n         self.options = []  # type: List[Argument]\n         self.parser = parser\n+        \n+    def _addoption(\n+        self,\n+        \"-c\",\n+        metavar=\"file\", \n+        type=str,\n+        dest=\"inifilename\",\n+        help=\"load configuration from `file` instead of trying to locate one of the implicit \"\n+        \"configuration files.\",\n+    )\n \n     def addoption(self, *optnames, **attrs):\n         \"\"\" add an option to this group.\ndiff --git a/src/_pytest/main.py b/src/_pytest/main.py\nindex 843c5b5f7..f2d389b80 100644\n--- a/src/_pytest/main.py\n+++ b/src/_pytest/main.py\n@@ -109,6 +109,8 @@ def pytest_addoption(parser):\n     group.addoption(\n         \"--collectonly\",\n         \"--collect-only\",\n+        \"-C\",\n+        \"-c\",\n         action=\"store_true\",\n         help=\"only collect tests, don't execute them.\",\n     ),\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

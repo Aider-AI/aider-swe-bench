@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-10949",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/utils/validation.py b/sklearn/utils/validation.py\nindex fe1f7236e..ffb3c0713 100644\n--- a/sklearn/utils/validation.py\n+++ b/sklearn/utils/validation.py\n@@ -574,9 +574,18 @@ def check_array(array, accept_sparse=False, accept_large_sparse=True,\n                                 context))\n \n     if warn_on_dtype and dtype_orig is not None and array.dtype != dtype_orig:\n-        msg = (\"Data with input dtype %s was converted to %s%s.\"\n-               % (dtype_orig, array.dtype, context))\n-        warnings.warn(msg, DataConversionWarning)\n+        # Check if input is pandas DataFrame to handle that case\n+        if hasattr(array_orig, 'dtypes'):\n+            # For DataFrame, check if any column was converted\n+            orig_dtypes = array_orig.dtypes\n+            if any(array.dtype != dt for dt in orig_dtypes):\n+                msg = (\"Data with input dtype object was converted to %s%s.\"\n+                       % (array.dtype, context))\n+                warnings.warn(msg, DataConversionWarning)\n+        else:\n+            msg = (\"Data with input dtype %s was converted to %s%s.\"\n+                   % (dtype_orig, array.dtype, context))\n+            warnings.warn(msg, DataConversionWarning)\n \n     if copy and np.may_share_memory(array, array_orig):\n         array = np.array(array, dtype=dtype, order=order)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

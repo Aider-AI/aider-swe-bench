@@ -1,0 +1,9 @@
+{
+    "instance_id": "pallets__flask-4045",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/CHANGES.rst b/CHANGES.rst\nindex d546dcab..db73ffd8 100644\n--- a/CHANGES.rst\n+++ b/CHANGES.rst\n@@ -8,6 +8,8 @@ Unreleased\n -   Re-add the ``filename`` parameter in ``send_from_directory``. The\n     ``filename`` parameter has been renamed to ``path``, the old name\n     is deprecated. :pr:`4019`\n+-   Blueprint names containing dots are no longer allowed since dots are used\n+    for nesting blueprints. :issue:`4043`\n -   Mark top-level names as exported so type checking understands\n     imports in user projects. :issue:`4024`\n -   Fix type annotation for ``g`` and inform mypy that it is a namespace\ndiff --git a/src/flask/blueprints.py b/src/flask/blueprints.py\nindex 5fb84d86..7393c06c 100644\n--- a/src/flask/blueprints.py\n+++ b/src/flask/blueprints.py\n@@ -181,6 +181,12 @@ class Blueprint(Scaffold):\n         root_path: t.Optional[str] = None,\n         cli_group: t.Optional[str] = _sentinel,  # type: ignore\n     ):\n+        if \".\" in name:\n+            raise ValueError(\n+                \"Blueprint names may not contain dots. The blueprint name\"\n+                f\" {name!r} is not valid.\"\n+            )\n+\n         super().__init__(\n             import_name=import_name,\n             static_folder=static_folder,\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

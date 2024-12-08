@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12589",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/admin/views/main.py b/django/contrib/admin/views/main.py\nindex 5bc3f736f1..af51267b6d 100644\n--- a/django/contrib/admin/views/main.py\n+++ b/django/contrib/admin/views/main.py\n@@ -316,6 +316,11 @@ class ChangeList:\n                     elif hasattr(order_field, 'resolve_expression'):\n                         # order_field is an expression.\n                         ordering.append(order_field.desc() if pfx == '-' else order_field.asc())\n+                    # Handle subquery fields in GROUP BY\n+                    elif isinstance(order_field, str) and order_field in queryset.query.annotations:\n+                        # Use the same expression from annotations for ordering\n+                        expr = queryset.query.annotations[order_field]\n+                        ordering.append(expr.desc() if pfx == '-' else expr.asc())\n                     # reverse order if order_field has already \"-\" as prefix\n                     elif order_field.startswith('-') and pfx == '-':\n                         ordering.append(order_field[1:])\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

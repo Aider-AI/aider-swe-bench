@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-17087",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/serializer.py b/django/db/migrations/serializer.py\nindex d88cda6e20..e4d6d80cd3 100644\n--- a/django/db/migrations/serializer.py\n+++ b/django/db/migrations/serializer.py\n@@ -168,6 +168,11 @@ class FunctionTypeSerializer(BaseSerializer):\n         ):\n             klass = self.value.__self__\n             module = klass.__module__\n+            # Get the full path for nested classes by checking if the class is nested\n+            if '.' in klass.__qualname__:\n+                return \"%s.%s.%s\" % (module, klass.__qualname__, self.value.__name__), {\n+                    \"import %s\" % module\n+                }\n             return \"%s.%s.%s\" % (module, klass.__name__, self.value.__name__), {\n                 \"import %s\" % module\n             }\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

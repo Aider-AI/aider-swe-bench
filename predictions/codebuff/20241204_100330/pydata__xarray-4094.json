@@ -1,0 +1,9 @@
+{
+    "instance_id": "pydata__xarray-4094",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/xarray/core/dataarray.py b/xarray/core/dataarray.py\nindex b0df8749..3869f40a 100644\n--- a/xarray/core/dataarray.py\n+++ b/xarray/core/dataarray.py\n@@ -1961,7 +1961,12 @@ class DataArray(AbstractArray, DataWithCoords):\n         # pull variables out of datarray\n         data_dict = {}\n         for k in variables:\n-            data_dict[k] = self.sel({variable_dim: k}).squeeze(drop=True)\n+            # Get the data for this variable\n+            var_data = self.sel({variable_dim: k})\n+            # Only squeeze if the dimension exists\n+            if variable_dim in var_data.dims:\n+                var_data = var_data.squeeze(dim=variable_dim, drop=True)\n+            data_dict[k] = var_data\n \n         # unstacked dataset\n         return Dataset(data_dict)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

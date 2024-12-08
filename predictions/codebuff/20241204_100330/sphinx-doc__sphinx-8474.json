@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-8474",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/transforms/__init__.py b/sphinx/transforms/__init__.py\nindex f854f1772..091e9f3b9 100644\n--- a/sphinx/transforms/__init__.py\n+++ b/sphinx/transforms/__init__.py\n@@ -173,10 +173,15 @@ class AutoNumbering(SphinxTransform):\n         domain = self.env.get_domain('std')  # type: StandardDomain\n \n         for node in self.document.traverse(nodes.Element):\n-            if (domain.is_enumerable_node(node) and\n-                    domain.get_numfig_title(node) is not None and\n-                    node['ids'] == []):\n-                self.document.note_implicit_target(node)\n+            if domain.is_enumerable_node(node):\n+                if (domain.get_numfig_title(node) is not None and\n+                        node['ids'] == []):\n+                    # Implicitly numbered elements\n+                    self.document.note_implicit_target(node)\n+                elif isinstance(node, nodes.table):\n+                    # Ensure tables always get numbered even without explicit IDs\n+                    if not node['ids']:\n+                        self.document.note_implicit_target(node)\n \n \n class SortIds(SphinxTransform):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

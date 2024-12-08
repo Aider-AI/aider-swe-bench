@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-17139",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/simplify/fu.py b/sympy/simplify/fu.py\nindex ad1130ef96..5978a8eef8 100644\n--- a/sympy/simplify/fu.py\n+++ b/sympy/simplify/fu.py\n@@ -501,7 +501,7 @@ def _f(rv):\n         if not (rv.is_Pow and rv.base.func == f):\n             return rv\n \n-        if (rv.exp < 0) == True:\n+        if rv.exp.is_real and (rv.exp < 0) == True:\n             return rv\n         if (rv.exp > max) == True:\n             return rv\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

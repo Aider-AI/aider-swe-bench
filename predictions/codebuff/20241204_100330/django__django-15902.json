@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15902",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/formsets.py b/django/forms/formsets.py\nindex 3adbc6979a..5f0c9630f1 100644\n--- a/django/forms/formsets.py\n+++ b/django/forms/formsets.py\n@@ -31,6 +31,7 @@ class ManagementForm(Form):\n     new forms via JavaScript, you should increment the count field of this form\n     as well.\n     \"\"\"\n+    template_name = \"django/forms/div.html\"  # Use div.html directly to avoid deprecation warning\n \n     TOTAL_FORMS = IntegerField(widget=HiddenInput)\n     INITIAL_FORMS = IntegerField(widget=HiddenInput)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

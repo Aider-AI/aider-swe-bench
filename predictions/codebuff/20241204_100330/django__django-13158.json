@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13158",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/models.py b/django/forms/models.py\nindex ab611afca7..80513534c2 100644\n--- a/django/forms/models.py\n+++ b/django/forms/models.py\n@@ -1323,7 +1323,9 @@ class ModelMultipleChoiceField(ModelChoiceField):\n         if self.required and not value:\n             raise ValidationError(self.error_messages['required'], code='required')\n         elif not self.required and not value:\n-            return self.queryset.none()\n+            # Always return an empty queryset for empty submissions,\n+            # regardless of whether the queryset uses union() or OR\n+            return self.queryset.model._default_manager.none()\n         if not isinstance(value, (list, tuple)):\n             raise ValidationError(\n                 self.error_messages['invalid_list'],\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

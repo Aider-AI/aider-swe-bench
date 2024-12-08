@@ -1,0 +1,9 @@
+{
+    "instance_id": "pydata__xarray-5131",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/xarray/core/groupby.py b/xarray/core/groupby.py\nindex 8a097251..af5abd9a 100644\n--- a/xarray/core/groupby.py\n+++ b/xarray/core/groupby.py\n@@ -436,7 +436,7 @@ class GroupBy(SupportsArithmetic):\n         return zip(self._unique_coord.values, self._iter_grouped())\n \n     def __repr__(self):\n-        return \"{}, grouped over {!r} \\n{!r} groups with labels {}.\".format(\n+        return \"{}, grouped over {!r}\\n{!r} groups with labels {}.\".format(\n             self.__class__.__name__,\n             self._unique_coord.name,\n             self._unique_coord.size,\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

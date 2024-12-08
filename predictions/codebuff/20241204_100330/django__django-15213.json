@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15213",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/expressions.py b/django/db/models/expressions.py\nindex 8642e1f151..156994f2dc 100644\n--- a/django/db/models/expressions.py\n+++ b/django/db/models/expressions.py\n@@ -979,6 +979,12 @@ class ExpressionWrapper(SQLiteNumericMixin, Expression):\n         return super().get_group_by_cols()\n \n     def as_sql(self, compiler, connection):\n+        if isinstance(self.expression, Q):\n+            if not self.expression.children:\n+                # Handle empty Q object\n+                if self.expression.negated:\n+                    return '1', []\n+                return '0', []\n         return compiler.compile(self.expression)\n \n     def __repr__(self):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

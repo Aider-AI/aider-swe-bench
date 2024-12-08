@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-22005",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/solvers/polysys.py b/sympy/solvers/polysys.py\nindex b9809fd4e9..674322d4eb 100644\n--- a/sympy/solvers/polysys.py\n+++ b/sympy/solvers/polysys.py\n@@ -240,7 +240,7 @@ def _solve_reduced_system(system, gens, entry=False):\n \n         univariate = list(filter(_is_univariate, basis))\n \n-        if len(univariate) == 1:\n+        if len(univariate) == 1 and len(gens) == 1:\n             f = univariate.pop()\n         else:\n             raise NotImplementedError(filldedent('''\ndiff --git a/sympy/solvers/tests/test_polysys.py b/sympy/solvers/tests/test_polysys.py\nindex 58419f8762..f0352cfcfa 100644\n--- a/sympy/solvers/tests/test_polysys.py\n+++ b/sympy/solvers/tests/test_polysys.py\n@@ -48,6 +48,8 @@ def test_solve_poly_system():\n     raises(NotImplementedError, lambda: solve_poly_system(\n         [z, -2*x*y**2 + x + y**2*z, y**2*(-z - 4) + 2]))\n     raises(PolynomialError, lambda: solve_poly_system([1/x], x))\n+    raises(NotImplementedError, lambda: solve_poly_system([x - 1], (x, y)))\n+    raises(NotImplementedError, lambda: solve_poly_system([y - 1], (x, y)))\n \n \n def test_solve_biquadratic():\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

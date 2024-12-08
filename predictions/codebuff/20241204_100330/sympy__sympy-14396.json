@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-14396",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/polys/polyoptions.py b/sympy/polys/polyoptions.py\nindex 6e504a3057..60b12169a1 100644\n--- a/sympy/polys/polyoptions.py\n+++ b/sympy/polys/polyoptions.py\n@@ -405,7 +405,7 @@ class Domain(with_metaclass(OptionType, Option)):\n     _re_realfield = re.compile(r\"^(R|RR)(_(\\d+))?$\")\n     _re_complexfield = re.compile(r\"^(C|CC)(_(\\d+))?$\")\n     _re_finitefield = re.compile(r\"^(FF|GF)\\((\\d+)\\)$\")\n-    _re_polynomial = re.compile(r\"^(Z|ZZ|Q|QQ)\\[(.+)\\]$\")\n+    _re_polynomial = re.compile(r\"^(Z|ZZ|Q|QQ|R|RR)\\[(.+)\\]$\")\n     _re_fraction = re.compile(r\"^(Z|ZZ|Q|QQ)\\((.+)\\)$\")\n     _re_algebraic = re.compile(r\"^(Q|QQ)\\<(.+)\\>$\")\n \n@@ -459,6 +459,8 @@ def preprocess(cls, domain):\n \n                 if ground in ['Z', 'ZZ']:\n                     return sympy.polys.domains.ZZ.poly_ring(*gens)\n+                elif ground in ['R', 'RR']:\n+                    return sympy.polys.domains.RR.poly_ring(*gens)\n                 else:\n                     return sympy.polys.domains.QQ.poly_ring(*gens)\n \n@@ -480,7 +482,7 @@ def preprocess(cls, domain):\n                 gens = list(map(sympify, r.groups()[1].split(',')))\n                 return sympy.polys.domains.QQ.algebraic_field(*gens)\n \n-        raise OptionError('expected a valid domain specification, got %s' % domain)\n+        raise OptionError('expected a valid domain specification like ZZ, QQ, RR, ZZ[x], QQ[x,y], RR[x], etc., got %s' % domain)\n \n     @classmethod\n     def postprocess(cls, options):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

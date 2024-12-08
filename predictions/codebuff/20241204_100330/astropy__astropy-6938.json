@@ -1,0 +1,9 @@
+{
+    "instance_id": "astropy__astropy-6938",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/astropy/io/fits/fitsrec.py b/astropy/io/fits/fitsrec.py\nindex 574b4073b1..8890e158e2 100644\n--- a/astropy/io/fits/fitsrec.py\n+++ b/astropy/io/fits/fitsrec.py\n@@ -1261,7 +1261,7 @@ class FITS_rec(np.recarray):\n \n         # Replace exponent separator in floating point numbers\n         if 'D' in format:\n-            output_field.replace(encode_ascii('E'), encode_ascii('D'))\n+            output_field[:] = output_field.replace(encode_ascii('E'), encode_ascii('D'))\n \n \n def _get_recarray_field(array, key):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

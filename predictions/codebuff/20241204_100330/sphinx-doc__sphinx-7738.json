@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-7738",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/ext/napoleon/docstring.py b/sphinx/ext/napoleon/docstring.py\nindex 11409e6f6..f73a4da9a 100644\n--- a/sphinx/ext/napoleon/docstring.py\n+++ b/sphinx/ext/napoleon/docstring.py\n@@ -318,9 +318,7 @@ class GoogleDocstring:\n             return [line[min_indent:] for line in lines]\n \n     def _escape_args_and_kwargs(self, name: str) -> str:\n-        if name.endswith('_'):\n-            name = name[:-1] + r'\\_'\n-\n+        # Don't escape trailing underscores - they are valid Python identifiers\n         if name[:2] == '**':\n             return r'\\*\\*' + name[2:]\n         elif name[:1] == '*':\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

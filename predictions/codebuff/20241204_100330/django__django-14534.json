@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14534",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/boundfield.py b/django/forms/boundfield.py\nindex 2ff8b0ee26..a34a330602 100644\n--- a/django/forms/boundfield.py\n+++ b/django/forms/boundfield.py\n@@ -277,7 +277,7 @@ class BoundWidget:\n \n     @property\n     def id_for_label(self):\n-        return 'id_%s_%s' % (self.data['name'], self.data['index'])\n+        return self.data['attrs']['id'] if 'id' in self.data['attrs'] else 'id_%s_%s' % (self.data['name'], self.data['index'])\n \n     @property\n     def choice_label(self):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

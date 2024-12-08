@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-19487",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/functions/elementary/complexes.py b/sympy/functions/elementary/complexes.py\nindex 7fda45982b..ce7e20a6fa 100644\n--- a/sympy/functions/elementary/complexes.py\n+++ b/sympy/functions/elementary/complexes.py\n@@ -394,6 +394,10 @@ def _eval_rewrite_as_Heaviside(self, arg, **kwargs):\n         if arg.is_extended_real:\n             return Heaviside(arg, H0=S(1)/2) * 2 - 1\n \n+    def _eval_rewrite_as_Piecewise(self, arg, **kwargs):\n+        if arg.is_extended_real:\n+            return Piecewise((1, arg > 0), (-1, arg < 0), (0, True))\n+\n     def _eval_simplify(self, **kwargs):\n         return self.func(self.args[0].factor())  # XXX include doit?\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

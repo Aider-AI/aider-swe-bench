@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13447",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py\nindex 837dabfea8..7fd5515a42 100644\n--- a/django/contrib/admin/sites.py\n+++ b/django/contrib/admin/sites.py\n@@ -430,7 +430,7 @@ class AdminSite:\n                     return HttpResponsePermanentRedirect(path)\n         raise Http404\n \n-    def _build_app_dict(self, request, label=None):\n+    def build_app_dict(self, request, label=None):\n         \"\"\"\n         Build the app dictionary. The optional `label` parameter filters models\n         of a specific app.\n@@ -466,6 +466,7 @@ class AdminSite:\n                 'perms': perms,\n                 'admin_url': None,\n                 'add_url': None,\n+                'model': model,\n             }\n             if perms.get('change') or perms.get('view'):\n                 model_dict['view_only'] = not perms.get('change')\n@@ -503,7 +504,7 @@ class AdminSite:\n         Return a sorted list of all the installed apps that have been\n         registered in this site.\n         \"\"\"\n-        app_dict = self._build_app_dict(request)\n+        app_dict = self.build_app_dict(request)\n \n         # Sort the apps alphabetically.\n         app_list = sorted(app_dict.values(), key=lambda x: x['name'].lower())\n@@ -534,7 +535,7 @@ class AdminSite:\n         return TemplateResponse(request, self.index_template or 'admin/index.html', context)\n \n     def app_index(self, request, app_label, extra_context=None):\n-        app_dict = self._build_app_dict(request, app_label)\n+        app_dict = self.build_app_dict(request, app_label)\n         if not app_dict:\n             raise Http404('The requested admin page does not exist.')\n         # Sort the models alphabetically within each app.\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12700",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/views/debug.py b/django/views/debug.py\nindex e6b7d4d821..98fa4b63b6 100644\n--- a/django/views/debug.py\n+++ b/django/views/debug.py\n@@ -83,13 +83,16 @@ class SafeExceptionReporterFilter:\n     def cleanse_setting(self, key, value):\n         \"\"\"\n         Cleanse an individual setting key/value of sensitive content. If the\n-        value is a dictionary, recursively cleanse the keys in that dictionary.\n+        value is a dictionary or any other iterable except strings, recursively\n+        cleanse the keys/values in that data structure.\n         \"\"\"\n         try:\n             if self.hidden_settings.search(key):\n                 cleansed = self.cleansed_substitute\n             elif isinstance(value, dict):\n                 cleansed = {k: self.cleanse_setting(k, v) for k, v in value.items()}\n+            elif isinstance(value, (list, tuple)) and not isinstance(value, str):\n+                cleansed = type(value)(self.cleanse_setting(key, item) for item in value)\n             else:\n                 cleansed = value\n         except TypeError:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

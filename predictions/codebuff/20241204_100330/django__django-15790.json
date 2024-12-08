@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15790",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/checks/templates.py b/django/core/checks/templates.py\nindex 5214276987..98df4a060c 100644\n--- a/django/core/checks/templates.py\n+++ b/django/core/checks/templates.py\n@@ -50,15 +50,15 @@ def check_string_if_invalid_is_string(app_configs, **kwargs):\n @register(Tags.templates)\n def check_for_template_tags_with_the_same_name(app_configs, **kwargs):\n     errors = []\n-    libraries = defaultdict(list)\n+    libraries = defaultdict(set)  # Use a set to deduplicate paths\n \n     for conf in settings.TEMPLATES:\n         custom_libraries = conf.get(\"OPTIONS\", {}).get(\"libraries\", {})\n         for module_name, module_path in custom_libraries.items():\n-            libraries[module_name].append(module_path)\n+            libraries[module_name].add(module_path)\n \n     for module_name, module_path in get_template_tag_modules():\n-        libraries[module_name].append(module_path)\n+        libraries[module_name].add(module_path)\n \n     for library_name, items in libraries.items():\n         if len(items) > 1:\n@@ -66,7 +66,7 @@ def check_for_template_tags_with_the_same_name(app_configs, **kwargs):\n                 Error(\n                     E003.msg.format(\n                         repr(library_name),\n-                        \", \".join(repr(item) for item in items),\n+                        \", \".join(repr(item) for item in sorted(items)),\n                     ),\n                     id=E003.id,\n                 )\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

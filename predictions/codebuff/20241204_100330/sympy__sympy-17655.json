@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-17655",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py\nindex 7c978c47be..0ca92c2e07 100644\n--- a/sympy/geometry/point.py\n+++ b/sympy/geometry/point.py\n@@ -247,6 +247,13 @@ def __iter__(self):\n     def __len__(self):\n         return len(self.args)\n \n+\n+        sympy.geometry.point.Point.scale\n+        \"\"\"\n+        factor = sympify(factor)\n+        coords = [simplify(x*factor) for x in self.args]\n+        return Point(coords, evaluate=False)\n+=======\n     def __mul__(self, factor):\n         \"\"\"Multiply point's coordinates by a factor.\n \n@@ -278,6 +285,19 @@ def __mul__(self, factor):\n         coords = [simplify(x*factor) for x in self.args]\n         return Point(coords, evaluate=False)\n \n+    def __rmul__(self, factor):\n+        \"\"\"Called when a number multiplies a Point from the left.\n+\n+        See __mul__ for details.\n+        \"\"\"\n+        return self.__mul__(factor)=======\n+\n+        sympy.geometry.point.Point.scale\n+        \"\"\"\n+        factor = sympify(factor)\n+        coords = [simplify(x*factor) for x in self.args]\n+        return Point(coords, evaluate=False)\n+\n     def __neg__(self):\n         \"\"\"Negate the point.\"\"\"\n         coords = [-x for x in self.args]\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

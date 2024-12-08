@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-14983",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/model_selection/_split.py b/sklearn/model_selection/_split.py\nindex c49a3ce6a..fb18056c4 100644\n--- a/sklearn/model_selection/_split.py\n+++ b/sklearn/model_selection/_split.py\n@@ -1063,7 +1063,7 @@ class LeavePGroupsOut(BaseCrossValidator):\n         return super().split(X, y, groups)\n \n \n-class _RepeatedSplits(metaclass=ABCMeta):\n+class _RepeatedSplits(BaseEstimator, metaclass=ABCMeta):\n     \"\"\"Repeated splits for an arbitrary randomized CV splitter.\n \n     Repeats splits for cross-validators n times with different randomization\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

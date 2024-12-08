@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-7975",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/environment/adapters/indexentries.py b/sphinx/environment/adapters/indexentries.py\nindex 5af213932..7b435fff5 100644\n--- a/sphinx/environment/adapters/indexentries.py\n+++ b/sphinx/environment/adapters/indexentries.py\n@@ -165,10 +165,10 @@ class IndexEntries:\n                 if k.startswith('\\N{RIGHT-TO-LEFT MARK}'):\n                     k = k[1:]\n                 letter = unicodedata.normalize('NFD', k[0])[0].upper()\n-                if letter.isalpha() or letter == '_':\n+                if letter.isalpha():\n                     return letter\n                 else:\n-                    # get all other symbols under one heading\n+                    # get all symbols (including _) under one heading\n                     return _('Symbols')\n             else:\n                 return v[2]\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

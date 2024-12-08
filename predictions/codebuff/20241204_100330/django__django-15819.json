@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15819",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/commands/inspectdb.py b/django/core/management/commands/inspectdb.py\nindex f33bcbdccf..bb10a6ac27 100644\n--- a/django/core/management/commands/inspectdb.py\n+++ b/django/core/management/commands/inspectdb.py\n@@ -182,6 +182,18 @@ class Command(BaseCommand):\n                             if ref_db_table == table_name\n                             else table2model(ref_db_table)\n                         )\n+                        # Add related_name if there are multiple FKs to same model\n+                        if rel_to != \"self\":\n+                            fks_to_model = [\n+                                (col, rel)\n+                                for col, rel in relations.items()\n+                                if rel[1] == ref_db_table\n+                            ]\n+                            if len(fks_to_model) > 1:\n+                                extra_params[\"related_name\"] = \"%s_%s_related\" % (\n+                                    table_name,\n+                                    column_name,\n+                                )\n                         if rel_to in known_models:\n                             field_type = \"%s(%s\" % (rel_type, rel_to)\n                         else:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

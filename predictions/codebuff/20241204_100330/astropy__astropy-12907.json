@@ -1,0 +1,9 @@
+{
+    "instance_id": "astropy__astropy-12907",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/astropy/modeling/core.py b/astropy/modeling/core.py\nindex da4352cb0c..2653057045 100644\n--- a/astropy/modeling/core.py\n+++ b/astropy/modeling/core.py\n@@ -828,6 +828,15 @@ class Model(metaclass=_ModelMeta):\n             self._input_units_allow_dimensionless = {key: self._input_units_allow_dimensionless\n                                                      for key in self.inputs}\n \n+    def _calculate_separability_matrix(self):\n+        \"\"\"\n+        This is a hook which customises the behavior of modeling.separable.\n+\n+        This allows complex subclasses to customise the separability matrix.\n+        If it returns `NotImplemented` the default behavior is used.\n+        \"\"\"\n+        return NotImplemented\n+\n     @property\n     def input_units_strict(self):\n         \"\"\"\ndiff --git a/astropy/modeling/tests/test_separable.py b/astropy/modeling/tests/test_separable.py\nindex 8dfe5c8626..e15525f8ab 100644\n--- a/astropy/modeling/tests/test_separable.py\n+++ b/astropy/modeling/tests/test_separable.py\n@@ -148,3 +148,13 @@ def test_custom_model_separable():\n \n     assert not model_c().separable\n     assert np.all(separability_matrix(model_c()) == [True, True])\n+\n+def test_nested_compound_models():\n+    # Test the example from the issue\n+    cm = models.Linear1D(10) & models.Linear1D(5)\n+    result = separability_matrix(models.Pix2Sky_TAN() & cm)\n+    expected = np.array([[True, True, False, False],\n+                        [True, True, False, False],\n+                        [False, False, True, False],\n+                        [False, False, False, True]])\n+    assert_allclose(result, expected)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

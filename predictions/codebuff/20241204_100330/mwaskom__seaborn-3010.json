@@ -1,0 +1,9 @@
+{
+    "instance_id": "mwaskom__seaborn-3010",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/seaborn/_stats/regression.py b/seaborn/_stats/regression.py\nindex 7b7ddc8d..bf7a0668 100644\n--- a/seaborn/_stats/regression.py\n+++ b/seaborn/_stats/regression.py\n@@ -23,8 +23,14 @@ class PolyFit(Stat):\n \n         x = data[\"x\"]\n         y = data[\"y\"]\n-        if x.nunique() <= self.order:\n-            # TODO warn?\n+\n+        # Drop any rows where x or y is missing\n+        mask = pd.notnull(x) & pd.notnull(y)\n+        x = x[mask]\n+        y = y[mask]\n+\n+        if len(x) <= self.order:\n+            # Not enough points for polynomial of this order\n             xx = yy = []\n         else:\n             p = np.polyfit(x, y, self.order)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

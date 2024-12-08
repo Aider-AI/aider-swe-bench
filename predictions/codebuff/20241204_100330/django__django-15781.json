@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15781",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/base.py b/django/core/management/base.py\nindex d37d43d5c5..bd55d11f42 100644\n--- a/django/core/management/base.py\n+++ b/django/core/management/base.py\n@@ -288,7 +288,8 @@ class BaseCommand:\n         \"\"\"\n         parser = CommandParser(\n             prog=\"%s %s\" % (os.path.basename(prog_name), subcommand),\n-            description=self.help or None,\n+            description=self.help.strip() if self.help else None,\n+            formatter_class=argparse.RawDescriptionHelpFormatter,\n             formatter_class=DjangoHelpFormatter,\n             missing_args_message=getattr(self, \"missing_args_message\", None),\n             called_from_command_line=getattr(self, \"_called_from_command_line\", None),\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14787",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/utils/decorators.py b/django/utils/decorators.py\nindex 5c9a5d01c7..d897734d93 100644\n--- a/django/utils/decorators.py\n+++ b/django/utils/decorators.py\n@@ -38,6 +38,13 @@ def _multi_decorate(decorators, method):\n         # 'func'. Also, wrap method.__get__() in a function because new\n         # attributes can't be set on bound method objects, only on functions.\n         bound_method = partial(method.__get__(self, type(self)))\n+        # Preserve attributes that decorators expect to find\n+        for attr in ('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'):\n+            try:\n+                setattr(bound_method, attr, getattr(method, attr))\n+            except (AttributeError, TypeError):\n+                # Some attributes may not exist or may not be writable\n+                pass\n         for dec in decorators:\n             bound_method = dec(bound_method)\n         return bound_method(*args, **kwargs)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

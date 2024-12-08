@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-10508",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/preprocessing/label.py b/sklearn/preprocessing/label.py\nindex 61b8d4a21..038994ad6 100644\n--- a/sklearn/preprocessing/label.py\n+++ b/sklearn/preprocessing/label.py\n@@ -127,6 +127,10 @@ class LabelEncoder(BaseEstimator, TransformerMixin):\n         check_is_fitted(self, 'classes_')\n         y = column_or_1d(y, warn=True)\n \n+        # Handle empty arrays\n+        if len(y) == 0:\n+            return np.array([], dtype=np.int64)\n+\n         classes = np.unique(y)\n         if len(np.intersect1d(classes, self.classes_)) < len(classes):\n             diff = np.setdiff1d(classes, self.classes_)\ndiff --git a/sklearn/preprocessing/tests/test_label.py b/sklearn/preprocessing/tests/test_label.py\nindex 4f64fc6b4..cadbbfc4b 100644\n--- a/sklearn/preprocessing/tests/test_label.py\n+++ b/sklearn/preprocessing/tests/test_label.py\n@@ -198,9 +198,18 @@ def test_label_encoder_fit_transform():\n def test_label_encoder_errors():\n     # Check that invalid arguments yield ValueError\n     le = LabelEncoder()\n-    assert_raises(ValueError, le.transform, [])\n+    assert_raises(ValueError, le.transform, [])  # Not fitted\n     assert_raises(ValueError, le.inverse_transform, [])\n \n+def test_label_encoder_empty_array():\n+    le = LabelEncoder()\n+    # Empty array behavior for both string and numeric labels\n+    le.fit(['a', 'b'])\n+    assert_array_equal(le.transform([]), np.array([], dtype=np.int64))\n+    \n+    le.fit([1, 2])\n+    assert_array_equal(le.transform([]), np.array([], dtype=np.int64))\n+\n     # Fail on unseen labels\n     le = LabelEncoder()\n     le.fit([1, 2, 3, -1, 1])\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

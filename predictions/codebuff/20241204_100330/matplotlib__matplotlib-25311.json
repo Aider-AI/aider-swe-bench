@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-25311",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/legend.py b/lib/matplotlib/legend.py\nindex ff6abdb958..2176b093cc 100644\n--- a/lib/matplotlib/legend.py\n+++ b/lib/matplotlib/legend.py\n@@ -1208,6 +1208,29 @@ class Legend(Artist):\n         \"\"\"Return ``True`` if the legend is draggable, ``False`` otherwise.\"\"\"\n         return self._draggable is not None\n \n+    def __getstate__(self):\n+        \"\"\"\n+        Return state of the legend for pickling.\n+        \"\"\"\n+        state = self.__dict__.copy()\n+        # Cannot pickle the draggable state which contains Qt objects\n+        was_draggable = self.get_draggable()\n+        state['_draggable'] = None\n+        if was_draggable:\n+            # Save the fact it was draggable to restore later\n+            state['_draggable_was_enabled'] = True\n+        return state\n+\n+    def __setstate__(self, state):\n+        \"\"\"\n+        Restore the legend state after unpickling.\n+        \"\"\"\n+        self.__dict__ = state\n+        # Restore draggable state if it was enabled\n+        if hasattr(self, '_draggable_was_enabled'):\n+            self.set_draggable(True)\n+            del self._draggable_was_enabled\n+\n \n # Helper functions to parse legend arguments for both `figure.legend` and\n # `axes.legend`:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-8282",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/ext/autodoc/typehints.py b/sphinx/ext/autodoc/typehints.py\nindex 4f81a6eae..e8b325b51 100644\n--- a/sphinx/ext/autodoc/typehints.py\n+++ b/sphinx/ext/autodoc/typehints.py\n@@ -24,6 +24,9 @@ from sphinx.util import inspect, typing\n def record_typehints(app: Sphinx, objtype: str, name: str, obj: Any,\n                      options: Dict, args: str, retann: str) -> None:\n     \"\"\"Record type hints to env object.\"\"\"\n+    if app.config.autodoc_typehints == 'none':\n+        return\n+\n     try:\n         if callable(obj):\n             annotations = app.env.temp_data.setdefault('annotations', {})\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

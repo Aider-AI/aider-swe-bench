@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-21847",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py\nindex 0e84403307..e6ede7e87c 100644\n--- a/sympy/polys/monomials.py\n+++ b/sympy/polys/monomials.py\n@@ -120,15 +120,16 @@ def itermonomials(variables, max_degrees, min_degrees=None):\n         variables = list(variables) + [S.One]\n         if all(variable.is_commutative for variable in variables):\n             monomials_list_comm = []\n-            for item in combinations_with_replacement(variables, max_degree):\n-                powers = dict()\n-                for variable in variables:\n-                    powers[variable] = 0\n-                for variable in item:\n-                    if variable != 1:\n-                        powers[variable] += 1\n-                if max(powers.values()) >= min_degree:\n-                    monomials_list_comm.append(Mul(*item))\n+            for d in range(min_degree, max_degree + 1):\n+                for item in combinations_with_replacement(variables, d):\n+                    powers = dict()\n+                    for variable in variables:\n+                        powers[variable] = 0\n+                    for variable in item:\n+                        if variable != 1:\n+                            powers[variable] += 1\n+                    if sum(powers.values()) >= min_degree:\n+                        monomials_list_comm.append(Mul(*item))\n             yield from set(monomials_list_comm)\n         else:\n             monomials_list_non_comm = []\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

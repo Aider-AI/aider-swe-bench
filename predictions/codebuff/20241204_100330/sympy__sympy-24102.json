@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-24102",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/parsing/mathematica.py b/sympy/parsing/mathematica.py\nindex 7ea14ce33a..47f5dda1e6 100644\n--- a/sympy/parsing/mathematica.py\n+++ b/sympy/parsing/mathematica.py\n@@ -586,7 +586,7 @@ def parse(self, s):\n         \"##\": lambda: [\"SlotSequence\", \"1\"],\n     }\n \n-    _literal = r\"[A-Za-z][A-Za-z0-9]*\"\n+    _literal = r\"[A-Za-z\\u0370-\\u03FF\\u1F00-\\u1FFF][A-Za-z0-9\\u0370-\\u03FF\\u1F00-\\u1FFF]*\"\n     _number = r\"(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)\"\n \n     _enclosure_open = [\"(\", \"[\", \"[[\", \"{\"]\ndiff --git a/sympy/parsing/tests/test_mathematica.py b/sympy/parsing/tests/test_mathematica.py\nindex f89b532ef1..63a6fb94c5 100644\n--- a/sympy/parsing/tests/test_mathematica.py\n+++ b/sympy/parsing/tests/test_mathematica.py\n@@ -88,6 +88,9 @@ def test_parser_mathematica_tokenizer():\n     chain = lambda expr: parser._from_tokens_to_fullformlist(parser._from_mathematica_to_tokens(expr))\n \n     # Basic patterns\n+    assert chain(\"\u03bb\") == \"\u03bb\"\n+    assert chain(\"\u03b1 + \u03b2\") == [\"Plus\", \"\u03b1\", \"\u03b2\"]\n+    assert chain(\"Sin[\u03b8]^2\") == [\"Power\", [\"Sin\", \"\u03b8\"], \"2\"]\n     assert chain(\"x\") == \"x\"\n     assert chain(\"42\") == \"42\"\n     assert chain(\".2\") == \".2\"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

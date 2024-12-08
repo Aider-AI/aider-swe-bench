@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-11400",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/ccode.py b/sympy/printing/ccode.py\nindex 30a07a7b59..0763698754 100644\n--- a/sympy/printing/ccode.py\n+++ b/sympy/printing/ccode.py\n@@ -43,6 +43,7 @@\n     \"atanh\": \"atanh\",\n     \"floor\": \"floor\",\n     \"ceiling\": \"ceil\",\n+    \"sinc\": \"sinc\",\n }\n \n # These are the core reserved words in the C language. Taken from:\n@@ -181,6 +182,10 @@ def _print_Infinity(self, expr):\n     def _print_NegativeInfinity(self, expr):\n         return '-HUGE_VAL'\n \n+    def _print_sinc(self, expr):\n+        args = [self._print(arg) for arg in expr.args]\n+        return \"((fabs(%s) < 1e-8) ? 1.0 : (sin(%s)/%s))\" % (args[0], args[0], args[0])\n+\n     def _print_Piecewise(self, expr):\n         if expr.args[-1].cond != True:\n             # We need the last conditional to be a True, otherwise the resulting\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

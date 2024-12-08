@@ -1,0 +1,9 @@
+{
+    "instance_id": "mwaskom__seaborn-3190",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/seaborn/_core/rules.py b/seaborn/_core/rules.py\nindex fea91034..d13f7cc6 100644\n--- a/seaborn/_core/rules.py\n+++ b/seaborn/_core/rules.py\n@@ -83,7 +83,10 @@ def variable_type(\n             action='ignore',\n             category=(FutureWarning, DeprecationWarning)  # type: ignore  # mypy bug?\n         )\n-        if np.isin(vector, [0, 1, np.nan]).all():\n+        if (\n+            pd.api.types.is_bool_dtype(vector)\n+            or np.isin(vector, [0, 1, np.nan, True, False]).all()\n+        ):\n             return VarType(boolean_type)\n \n     # Defer to positive pandas tests\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

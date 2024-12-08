@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13265",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py\nindex dddf7c679c..75e3ba64d0 100644\n--- a/django/db/migrations/operations/models.py\n+++ b/django/db/migrations/operations/models.py\n@@ -631,6 +631,14 @@ class AlterOrderWithRespectTo(ModelOptionOperation):\n     def migration_name_fragment(self):\n         return 'alter_%s_order_with_respect_to' % self.name_lower\n \n+    def reduce(self, operation, app_label):\n+        # If this is an index operation that references _order, we should run first\n+        if isinstance(operation, AddIndex) and any('_order' in field for field in operation.index.fields):\n+            return [self, operation]\n+        if isinstance(operation, RemoveField) and self.is_same_field_operation(operation):\n+            return [operation]\n+        return super().reduce(operation, app_label)\n+\n \n class AlterModelOptions(ModelOptionOperation):\n     \"\"\"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

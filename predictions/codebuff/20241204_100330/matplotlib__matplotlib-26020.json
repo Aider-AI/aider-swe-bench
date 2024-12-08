@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-26020",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/mpl_toolkits/axes_grid1/axes_grid.py b/lib/mpl_toolkits/axes_grid1/axes_grid.py\nindex 2b1b1d3200..a7282200d3 100644\n--- a/lib/mpl_toolkits/axes_grid1/axes_grid.py\n+++ b/lib/mpl_toolkits/axes_grid1/axes_grid.py\n@@ -13,8 +13,17 @@ from .mpl_axes import Axes\n def _tick_only(ax, bottom_on, left_on):\n     bottom_off = not bottom_on\n     left_off = not left_on\n-    ax.axis[\"bottom\"].toggle(ticklabels=bottom_off, label=bottom_off)\n-    ax.axis[\"left\"].toggle(ticklabels=left_off, label=left_off)\n+    \n+    # Handle both dict-style and callable axis attributes\n+    if hasattr(ax.axis, \"__getitem__\"):  # Dictionary-style axis\n+        ax.axis[\"bottom\"].toggle(ticklabels=bottom_off, label=bottom_off)\n+        ax.axis[\"left\"].toggle(ticklabels=left_off, label=left_off)\n+    else:  # Callable axis (e.g. GeoAxes)\n+        # For GeoAxes, we need to use tick_params instead\n+        ax.tick_params(axis='x', which='both',\n+                      labelbottom=bottom_on, labeltop=False)\n+        ax.tick_params(axis='y', which='both',\n+                      labelleft=left_on, labelright=False)\n \n \n class CbarAxesBase:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

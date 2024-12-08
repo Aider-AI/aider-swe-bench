@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-5692",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/junitxml.py b/src/_pytest/junitxml.py\nindex 15c630b1d..d3224ac9c 100644\n--- a/src/_pytest/junitxml.py\n+++ b/src/_pytest/junitxml.py\n@@ -657,6 +657,14 @@ class LogXML:\n         )\n         logfile.write('<?xml version=\"1.0\" encoding=\"utf-8\"?>')\n \n+        # Get hostname\n+        import socket\n+        hostname = socket.gethostname()\n+        \n+        # Format timestamp in ISO format\n+        import datetime\n+        timestamp = datetime.datetime.fromtimestamp(self.suite_start_time).isoformat()\n+\n         suite_node = Junit.testsuite(\n             self._get_global_properties_node(),\n             [x.to_xml() for x in self.node_reporters_ordered],\n@@ -666,6 +674,8 @@ class LogXML:\n             skipped=self.stats[\"skipped\"],\n             tests=numtests,\n             time=\"%.3f\" % suite_time_delta,\n+            hostname=hostname,\n+            timestamp=timestamp,\n         )\n         logfile.write(Junit.testsuites([suite_node]).unicode(indent=0))\n         logfile.close()\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

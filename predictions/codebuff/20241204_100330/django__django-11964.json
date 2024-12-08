@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11964",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py\nindex d610dc86f0..0354a28857 100644\n--- a/django/db/models/fields/__init__.py\n+++ b/django/db/models/fields/__init__.py\n@@ -1014,6 +1014,9 @@ class CharField(Field):\n \n     def get_prep_value(self, value):\n         value = super().get_prep_value(value)\n+        # Convert enum values to their primitive types\n+        if value is not None and hasattr(value, 'value'):\n+            value = value.value\n         return self.to_python(value)\n \n     def formfield(self, **kwargs):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23964",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/backends/backend_ps.py b/lib/matplotlib/backends/backend_ps.py\nindex f209e811f1..29132b4b6d 100644\n--- a/lib/matplotlib/backends/backend_ps.py\n+++ b/lib/matplotlib/backends/backend_ps.py\n@@ -662,11 +662,13 @@ grestore\n                         stream.append(curr_stream)\n                     prev_font = item.ft_object\n                     curr_stream = [ps_name, []]\n-                curr_stream[1].append(\n-                    (item.x, item.ft_object.get_glyph_name(item.glyph_idx))\n-                )\n+                if item.ft_object:  # Add null check here\n+                    curr_stream[1].append(\n+                        (item.x, item.ft_object.get_glyph_name(item.glyph_idx))\n+                    )\n             # append the last entry\n-            stream.append(curr_stream)\n+            if curr_stream:  # Add null check here\n+                stream.append(curr_stream)\n \n         self.set_color(*gc.get_rgb())\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

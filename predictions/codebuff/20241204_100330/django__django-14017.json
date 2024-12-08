@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14017",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py\nindex c957ffa564..6d9c4dfe41 100644\n--- a/django/db/models/query_utils.py\n+++ b/django/db/models/query_utils.py\n@@ -64,6 +64,11 @@ class Q(tree.Node):\n     def __and__(self, other):\n         return self._combine(other, self.AND)\n \n+    def __rand__(self, other):\n+        if hasattr(other, 'resolve_expression'):\n+            return other & self\n+        return NotImplemented\n+\n     def __invert__(self):\n         obj = type(self)()\n         obj.add(self, self.AND)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

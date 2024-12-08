@@ -1,0 +1,9 @@
+{
+    "instance_id": "pallets__flask-5063",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/flask/cli.py b/src/flask/cli.py\nindex 37a15ff2..fb8dbf03 100644\n--- a/src/flask/cli.py\n+++ b/src/flask/cli.py\n@@ -1018,20 +1018,33 @@ def routes_command(sort: str, all_methods: bool) -> None:\n         for rule in rules\n     ]\n \n-    headers = (\"Endpoint\", \"Methods\", \"Rule\")\n+    # Get domain info for each rule\n+    domains = []\n+    server_name = current_app.config.get(\"SERVER_NAME\", \"\")\n+    for rule in rules:\n+        if rule.subdomain:\n+            domain = f\"{rule.subdomain}.{server_name}\"\n+        elif rule.host:\n+            domain = rule.host\n+        else:\n+            domain = server_name\n+        domains.append(domain)\n+\n+    headers = (\"Domain\", \"Endpoint\", \"Methods\", \"Rule\")\n     widths = (\n+        max(len(domain) for domain in domains),\n         max(len(rule.endpoint) for rule in rules),\n         max(len(methods) for methods in rule_methods),\n         max(len(rule.rule) for rule in rules),\n     )\n     widths = [max(len(h), w) for h, w in zip(headers, widths)]\n-    row = \"{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}\".format(*widths)\n+    row = \"{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}  {{3:<{3}}}\".format(*widths)\n \n     click.echo(row.format(*headers).strip())\n     click.echo(row.format(*(\"-\" * width for width in widths)))\n \n-    for rule, methods in zip(rules, rule_methods):\n-        click.echo(row.format(rule.endpoint, methods, rule.rule).rstrip())\n+    for rule, methods, domain in zip(rules, rule_methods, domains):\n+        click.echo(row.format(domain, rule.endpoint, methods, rule.rule).rstrip())\n \n \n cli = FlaskGroup(\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

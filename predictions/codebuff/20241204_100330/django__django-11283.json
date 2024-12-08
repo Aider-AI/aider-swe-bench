@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11283",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/auth/migrations/0011_update_proxy_permissions.py b/django/contrib/auth/migrations/0011_update_proxy_permissions.py\nindex 0e66649695..f15ba4e223 100644\n--- a/django/contrib/auth/migrations/0011_update_proxy_permissions.py\n+++ b/django/contrib/auth/migrations/0011_update_proxy_permissions.py\n@@ -24,6 +24,16 @@ def update_proxy_model_permissions(apps, schema_editor, reverse=False):\n         proxy_content_type = ContentType.objects.get_for_model(Model, for_concrete_model=False)\n         old_content_type = proxy_content_type if reverse else concrete_content_type\n         new_content_type = concrete_content_type if reverse else proxy_content_type\n+        \n+        # First check for and delete any conflicting permissions on the new content type\n+        conflicting_permissions = Permission.objects.filter(\n+            permissions_query,\n+            content_type=new_content_type,\n+        )\n+        if conflicting_permissions.exists():\n+            conflicting_permissions.delete()\n+            \n+        # Now update the permissions from the old content type\n         Permission.objects.filter(\n             permissions_query,\n             content_type=old_content_type,\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

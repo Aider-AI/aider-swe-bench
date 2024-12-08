@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11910",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/operations/fields.py b/django/db/migrations/operations/fields.py\nindex 402dae2829..6e25dee9f5 100644\n--- a/django/db/migrations/operations/fields.py\n+++ b/django/db/migrations/operations/fields.py\n@@ -305,10 +305,12 @@ class RenameField(FieldOperation):\n         fields = model_state.fields\n         found = False\n         delay = True\n+        renamed_pk = False\n         for index, (name, field) in enumerate(fields):\n             if not found and name == self.old_name:\n                 fields[index] = (self.new_name, field)\n                 found = True\n+                renamed_pk = getattr(field, 'primary_key', False)\n             # Fix from_fields to refer to the new field.\n             from_fields = getattr(field, 'from_fields', None)\n             if from_fields:\n@@ -352,6 +354,13 @@ class RenameField(FieldOperation):\n                                 self.new_name if to_field_name == self.old_name else to_field_name\n                                 for to_field_name in to_fields\n                             ])\n+                # If we renamed a PK, update any ForeignKey to_field that points to it\n+                elif renamed_pk and getattr(field, 'to_field', None) == self.old_name:\n+                    remote_model = getattr(field, 'remote_field', None)\n+                    if remote_model and self._get_model_tuple(\n+                        remote_model.model, model_app_label, model_name\n+                    ) == model_tuple:\n+                        field.to_field = self.new_name\n         state.reload_model(app_label, self.model_name_lower, delay=delay)\n \n     def database_forwards(self, app_label, schema_editor, from_state, to_state):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

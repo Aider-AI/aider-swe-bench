@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13590",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py\nindex 4648daf395..35cbc91a2e 100644\n--- a/django/db/models/sql/query.py\n+++ b/django/db/models/sql/query.py\n@@ -1077,10 +1077,13 @@ class Query(BaseExpression):\n         elif isinstance(value, (list, tuple)):\n             # The items of the iterable may be expressions and therefore need\n             # to be resolved independently.\n-            return type(value)(\n+            resolved_values = [\n                 self.resolve_lookup_value(sub_value, can_reuse, allow_joins)\n                 for sub_value in value\n-            )\n+            ]\n+            if hasattr(type(value), '_make'):  # Handle named tuples\n+                return type(value)(*resolved_values)\n+            return type(value)(resolved_values)\n         return value\n \n     def solve_lookup_type(self, lookup):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

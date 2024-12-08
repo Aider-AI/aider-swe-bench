@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-17022",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/pycode.py b/sympy/printing/pycode.py\nindex 6ec7bd891c..e271dcfa9b 100644\n--- a/sympy/printing/pycode.py\n+++ b/sympy/printing/pycode.py\n@@ -472,6 +472,7 @@ def _print_log1p(self, e):\n     'atanh': 'arctanh',\n     'exp2': 'exp2',\n     'sign': 'sign',\n+    'Identity': 'identity',\n })\n \n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

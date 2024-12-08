@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-8721",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/ext/viewcode.py b/sphinx/ext/viewcode.py\nindex a7d52a91c..cd0fe8173 100644\n--- a/sphinx/ext/viewcode.py\n+++ b/sphinx/ext/viewcode.py\n@@ -56,8 +56,12 @@ def doctree_read(app: Sphinx, doctree: Node) -> None:\n         env._viewcode_modules = {}  # type: ignore\n     if app.builder.name == \"singlehtml\":\n         return\n-    if app.builder.name.startswith(\"epub\") and not env.config.viewcode_enable_epub:\n+    if (app.builder.name.startswith(\"epub\") or \n+            (hasattr(env, '_viewcode_epub_flag') and not env.config.viewcode_enable_epub)):\n         return\n+    # Set flag when processing for epub as part of a combined build\n+    if app.builder.name.startswith(\"epub\"):\n+        env._viewcode_epub_flag = True\n \n     def has_tag(modname: str, fullname: str, docname: str, refname: str) -> bool:\n         entry = env._viewcode_modules.get(modname, None)  # type: ignore\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

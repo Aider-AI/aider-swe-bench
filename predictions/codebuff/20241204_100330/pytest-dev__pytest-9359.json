@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-9359",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/assertion/rewrite.py b/src/_pytest/assertion/rewrite.py\nindex 456681ab2..bc85a4f00 100644\n--- a/src/_pytest/assertion/rewrite.py\n+++ b/src/_pytest/assertion/rewrite.py\n@@ -567,7 +567,14 @@ def _get_assertion_exprs(src: bytes) -> Dict[int, str]:\n     def _write_and_reset() -> None:\n         nonlocal depth, lines, assert_lineno, seen_lines\n         assert assert_lineno is not None\n-        ret[assert_lineno] = \"\".join(lines).rstrip().rstrip(\"\\\\\")\n+        # Remove any trailing backslashes and whitespace\n+        joined = \"\".join(lines).rstrip().rstrip(\"\\\\\")\n+        # Only keep the assertion part before any comma at depth 0\n+        if depth == 0:\n+            comma_idx = joined.find(\",\")\n+            if comma_idx != -1:\n+                joined = joined[:comma_idx]\n+        ret[assert_lineno] = joined\n         depth = 0\n         lines = []\n         assert_lineno = None\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

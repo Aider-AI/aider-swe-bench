@@ -1,0 +1,9 @@
+{
+    "instance_id": "pylint-dev__pylint-6506",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/pylint/config/arguments_manager.py b/pylint/config/arguments_manager.py\nindex f5bd88e3e..47a9fcfd2 100644\n--- a/pylint/config/arguments_manager.py\n+++ b/pylint/config/arguments_manager.py\n@@ -255,11 +255,14 @@ class _ArgumentsManager:\n         \"\"\"Parse the arguments found on the command line into the namespace.\"\"\"\n         arguments = sys.argv[1:] if arguments is None else arguments\n \n-        self.config, parsed_args = self._arg_parser.parse_known_args(\n-            arguments, self.config\n-        )\n-\n-        return parsed_args\n+        try:\n+            self.config, parsed_args = self._arg_parser.parse_known_args(\n+                arguments, self.config\n+            )\n+            return parsed_args\n+        except _UnrecognizedOptionError as e:\n+            print(f\"Command line:1:0: E0015: Unrecognized option found: {e.options[0]} (unrecognized-option)\")\n+            sys.exit(32)\n \n     def reset_parsers(self, usage: str = \"\") -> None:  # pragma: no cover\n         \"\"\"DEPRECATED.\"\"\"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

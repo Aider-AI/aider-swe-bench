@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12915",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/staticfiles/handlers.py b/django/contrib/staticfiles/handlers.py\nindex 711d8864ad..a1d7e43847 100644\n--- a/django/contrib/staticfiles/handlers.py\n+++ b/django/contrib/staticfiles/handlers.py\n@@ -86,3 +86,12 @@ class ASGIStaticFilesHandler(StaticFilesHandlerMixin, ASGIHandler):\n             return await super().__call__(scope, receive, send)\n         # Hand off to the main app\n         return await self.application(scope, receive, send)\n+\n+    async def get_response_async(self, request):\n+        \"\"\"\n+        Serve static files asynchronously.\n+        \"\"\"\n+        try:\n+            return self.serve(request)\n+        except Http404 as e:\n+            return await sync_to_async(response_for_exception)(request, e)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

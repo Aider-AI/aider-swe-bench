@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15400",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/utils/functional.py b/django/utils/functional.py\nindex 9e1be0fe0f..b367ae5b1b 100644\n--- a/django/utils/functional.py\n+++ b/django/utils/functional.py\n@@ -195,7 +195,9 @@ def lazy(func, *resultclasses):\n             return self.__cast() + other\n \n         def __radd__(self, other):\n-            return other + self.__cast()\n+            if self._wrapped is empty:\n+                self._setup()\n+            return other + self._wrapped\n \n         def __deepcopy__(self, memo):\n             # Instances of this class are effectively immutable. It's just a\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

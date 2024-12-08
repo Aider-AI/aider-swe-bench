@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-5413",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/_code/code.py b/src/_pytest/_code/code.py\nindex c4ed961ac..977e859e4 100644\n--- a/src/_pytest/_code/code.py\n+++ b/src/_pytest/_code/code.py\n@@ -537,9 +537,7 @@ class ExceptionInfo:\n     def __str__(self):\n         if self._excinfo is None:\n             return repr(self)\n-        entry = self.traceback[-1]\n-        loc = ReprFileLocation(entry.path, entry.lineno + 1, self.exconly())\n-        return str(loc)\n+        return str(self.value)\n \n     def match(self, regexp):\n         \"\"\"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

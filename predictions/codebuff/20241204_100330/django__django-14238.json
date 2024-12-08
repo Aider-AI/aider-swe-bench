@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14238",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/options.py b/django/db/models/options.py\nindex 4028e05b99..b48ea33dfd 100644\n--- a/django/db/models/options.py\n+++ b/django/db/models/options.py\n@@ -242,10 +242,14 @@ class Options:\n                 f\"not be imported.\"\n             )\n             raise ImproperlyConfigured(msg) from e\n-        if not issubclass(pk_class, AutoField):\n+        # Allow subclasses of AutoField, BigAutoField, and SmallAutoField\n+        from django.db.models import AutoField, BigAutoField, SmallAutoField\n+        if not (issubclass(pk_class, AutoField) or \n+                issubclass(pk_class, BigAutoField) or \n+                issubclass(pk_class, SmallAutoField)):\n             raise ValueError(\n                 f\"Primary key '{pk_class_path}' referred by {source} must \"\n-                f\"subclass AutoField.\"\n+                f\"subclass AutoField, BigAutoField, or SmallAutoField.\"\n             )\n         return pk_class\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

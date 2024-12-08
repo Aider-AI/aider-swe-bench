@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-25747",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/pipeline.py b/sklearn/pipeline.py\nindex 94d9465d7..2a910bd2d 100644\n--- a/sklearn/pipeline.py\n+++ b/sklearn/pipeline.py\n@@ -1280,6 +1280,11 @@ class FeatureUnion(TransformerMixin, _BaseComposition):\n         config = _get_output_config(\"transform\", self)\n         if config[\"dense\"] == \"pandas\" and all(hasattr(X, \"iloc\") for X in Xs):\n             pd = check_pandas_support(\"transform\")\n+            # Ensure all DataFrames have compatible indices\n+            common_idx = Xs[0].index\n+            for X in Xs[1:]:\n+                if not X.index.equals(common_idx):\n+                    X.index = common_idx\n             return pd.concat(Xs, axis=1)\n \n         if any(sparse.issparse(f) for f in Xs):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

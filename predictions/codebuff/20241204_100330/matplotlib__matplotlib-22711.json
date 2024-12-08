@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-22711",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/widgets.py b/lib/matplotlib/widgets.py\nindex da5b40a5ef..b3101cdbbc 100644\n--- a/lib/matplotlib/widgets.py\n+++ b/lib/matplotlib/widgets.py\n@@ -903,13 +903,11 @@ class RangeSlider(SliderBase):\n             xy[1] = .25, val[1]\n             xy[2] = .75, val[1]\n             xy[3] = .75, val[0]\n-            xy[4] = .25, val[0]\n         else:\n             xy[0] = val[0], .25\n             xy[1] = val[0], .75\n             xy[2] = val[1], .75\n             xy[3] = val[1], .25\n-            xy[4] = val[0], .25\n         self.poly.xy = xy\n         self.valtext.set_text(self._format(val))\n         if self.drawon:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

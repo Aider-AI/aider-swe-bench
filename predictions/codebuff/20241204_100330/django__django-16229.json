@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-16229",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/postgres/forms/array.py b/django/contrib/postgres/forms/array.py\nindex ddb022afc3..9d29e0c527 100644\n--- a/django/contrib/postgres/forms/array.py\n+++ b/django/contrib/postgres/forms/array.py\n@@ -22,6 +22,7 @@ class SimpleArrayField(forms.CharField):\n     ):\n         self.base_field = base_field\n         self.delimiter = delimiter\n+        kwargs['show_hidden_initial'] = False  # Prevent validation bypass in admin inlines\n         super().__init__(**kwargs)\n         if min_length is not None:\n             self.min_length = min_length\n@@ -31,7 +32,11 @@ class SimpleArrayField(forms.CharField):\n             self.validators.append(ArrayMaxLengthValidator(int(max_length)))\n \n     def clean(self, value):\n+        if value == self.empty_values:\n+            return []\n         value = super().clean(value)\n+        if not value:\n+            return []\n         return [self.base_field.clean(val) for val in value]\n \n     def prepare_value(self, value):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

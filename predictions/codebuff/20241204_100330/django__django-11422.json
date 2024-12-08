@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11422",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/commands/runserver.py b/django/core/management/commands/runserver.py\nindex f501e995e0..9f7dc5605f 100644\n--- a/django/core/management/commands/runserver.py\n+++ b/django/core/management/commands/runserver.py\n@@ -108,6 +108,10 @@ class Command(BaseCommand):\n         # to be raised in the child process, raise it now.\n         autoreload.raise_last_exception()\n \n+        # Add manage.py to watched files\n+        reloader = autoreload.get_reloader()\n+        reloader.watch_file('manage.py')\n+\n         threading = options['use_threading']\n         # 'shutdown_message' is a stealth option.\n         shutdown_message = options.get('shutdown_message', '')\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

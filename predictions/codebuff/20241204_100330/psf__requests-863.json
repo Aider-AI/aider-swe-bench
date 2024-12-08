@@ -1,0 +1,9 @@
+{
+    "instance_id": "psf__requests-863",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/requests/hooks.py b/requests/hooks.py\nindex 9e0ce346..71ad6a2e 100644\n--- a/requests/hooks.py\n+++ b/requests/hooks.py\n@@ -39,11 +39,13 @@ def dispatch_hook(key, hooks, hook_data):\n \n         if hasattr(hooks, '__call__'):\n             hooks = [hooks]\n+        elif not isinstance(hooks, (list, tuple)):\n+            hooks = [hooks]\n \n         for hook in hooks:\n-            _hook_data = hook(hook_data)\n-            if _hook_data is not None:\n-                hook_data = _hook_data\n-\n+            if hook is not None and hasattr(hook, '__call__'):\n+                _hook_data = hook(hook_data)\n+                if _hook_data is not None:\n+                    hook_data = _hook_data\n \n     return hook_data\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

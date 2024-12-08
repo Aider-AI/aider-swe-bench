@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12284",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py\nindex 1a55d3d417..58cc650fe6 100644\n--- a/django/db/models/fields/__init__.py\n+++ b/django/db/models/fields/__init__.py\n@@ -765,10 +765,17 @@ class Field(RegisterLookupMixin):\n                 setattr(cls, self.attname, self.descriptor_class(self))\n         if self.choices is not None:\n             if not hasattr(cls, 'get_%s_display' % self.name):\n+                # Create a new instance of the field for this class to avoid sharing\n+                # the choices between parent and child classes\n+                if private_only:\n+                    field = copy.deepcopy(self)\n+                    field.model = cls\n+                else:\n+                    field = self\n                 setattr(\n                     cls,\n                     'get_%s_display' % self.name,\n-                    partialmethod(cls._get_FIELD_display, field=self),\n+                    partialmethod(cls._get_FIELD_display, field=field),\n                 )\n \n     def get_filter_kwargs_for_object(self, obj):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

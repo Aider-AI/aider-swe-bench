@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-18621",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/matrices/expressions/blockmatrix.py b/sympy/matrices/expressions/blockmatrix.py\nindex 11aebbc59f..210368d505 100644\n--- a/sympy/matrices/expressions/blockmatrix.py\n+++ b/sympy/matrices/expressions/blockmatrix.py\n@@ -233,6 +233,10 @@ def transpose(self):\n         return self._eval_transpose()\n \n     def _entry(self, i, j, **kwargs):\n+        # Special case for single block\n+        if len(self.args) == 1:\n+            return self.args[0][i, j]\n+            \n         # Find row entry\n         for row_block, numrows in enumerate(self.rowblocksizes):\n             if (i < numrows) != False:\ndiff --git a/sympy/matrices/expressions/tests/test_blockmatrix.py b/sympy/matrices/expressions/tests/test_blockmatrix.py\nindex 9d778737b0..8c91907d09 100644\n--- a/sympy/matrices/expressions/tests/test_blockmatrix.py\n+++ b/sympy/matrices/expressions/tests/test_blockmatrix.py\n@@ -160,6 +160,11 @@ def test_BlockDiagMatrix():\n     C = MatrixSymbol('C', l, l)\n     M = MatrixSymbol('M', n + m + l, n + m + l)\n \n+    # Test single block case\n+    X1 = BlockDiagMatrix(A)\n+    assert X1[0, 0] == A[0, 0]\n+    assert X1[n-1, n-1] == A[n-1, n-1]\n+\n     X = BlockDiagMatrix(A, B, C)\n     Y = BlockDiagMatrix(A, 2*B, 3*C)\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

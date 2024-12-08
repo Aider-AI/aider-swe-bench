@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13768",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/dispatch/dispatcher.py b/django/dispatch/dispatcher.py\nindex b7d9d26389..d4024a35d8 100644\n--- a/django/dispatch/dispatcher.py\n+++ b/django/dispatch/dispatcher.py\n@@ -208,6 +208,9 @@ class Signal:\n             try:\n                 response = receiver(signal=self, sender=sender, **named)\n             except Exception as err:\n+                import logging\n+                logger = logging.getLogger('django.dispatch')\n+                logger.exception('Error calling signal receiver %r', receiver)\n                 responses.append((receiver, err))\n             else:\n                 responses.append((receiver, response))\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

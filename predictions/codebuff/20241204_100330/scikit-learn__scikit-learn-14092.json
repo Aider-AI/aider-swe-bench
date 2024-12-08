@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-14092",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/utils/validation.py b/sklearn/utils/validation.py\nindex 8747844e5..02363d74d 100644\n--- a/sklearn/utils/validation.py\n+++ b/sklearn/utils/validation.py\n@@ -971,6 +971,28 @@ def check_scalar(x, name, target_type, min_val=None, max_val=None):\n     ValueError\n         If the parameter's value violates the given bounds.\n     \"\"\"\n+    # Handle numpy scalar types\n+    if hasattr(x, 'dtype'):\n+        # Extract underlying Python scalar from numpy scalar types\n+        x = x.item()\n+\n+    # Handle numeric type conversion for compatible types\n+    if isinstance(target_type, tuple):\n+        numeric_types = tuple(t for t in target_type \n+                            if issubclass(t, numbers.Number))\n+        if numeric_types and isinstance(x, numbers.Number):\n+            # Convert to the first compatible numeric type\n+            for t in numeric_types:\n+                try:\n+                    x = t(x)\n+                    break\n+                except (TypeError, ValueError):\n+                    continue\n+    elif issubclass(target_type, numbers.Number) and isinstance(x, numbers.Number):\n+        try:\n+            x = target_type(x)\n+        except (TypeError, ValueError):\n+            pass\n \n     if not isinstance(x, target_type):\n         raise TypeError('`{}` must be an instance of {}, not {}.'\n@@ -981,3 +1003,5 @@ def check_scalar(x, name, target_type, min_val=None, max_val=None):\n \n     if max_val is not None and x > max_val:\n         raise ValueError('`{}`= {}, must be <= {}.'.format(name, x, max_val))\n+\n+    return x\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

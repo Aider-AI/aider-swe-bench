@@ -1,0 +1,9 @@
+{
+    "instance_id": "mwaskom__seaborn-2848",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/seaborn/axisgrid.py b/seaborn/axisgrid.py\nindex 8526f44b..353f7ad2 100644\n--- a/seaborn/axisgrid.py\n+++ b/seaborn/axisgrid.py\n@@ -1586,6 +1586,17 @@ class PairGrid(Grid):\n         else:\n             axes_vars = [x_var, y_var]\n \n+        # Handle hue passed directly to the plotting function\n+        if \"hue\" in kwargs:\n+            hue_var = kwargs.pop(\"hue\")\n+            if isinstance(hue_var, pd.Series):\n+                self._hue_var = hue_var.name\n+                self.hue_vals = hue_var\n+                self.hue_names = categorical_order(hue_var)\n+                self.palette = self._get_palette(self.data, self._hue_var, None, None)\n+            else:\n+                raise ValueError(\"hue must be a pandas Series when passed to map()\")\n+\n         hue_grouped = self.data.groupby(self.hue_vals)\n         for k, label_k in enumerate(self._hue_order):\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

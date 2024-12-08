@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-25638",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/utils/multiclass.py b/sklearn/utils/multiclass.py\nindex 5eaef2fde..38a3618fa 100644\n--- a/sklearn/utils/multiclass.py\n+++ b/sklearn/utils/multiclass.py\n@@ -23,6 +23,15 @@ from ..utils._array_api import get_namespace\n def _unique_multiclass(y):\n     xp, is_array_api = get_namespace(y)\n     if hasattr(y, \"__array__\") or is_array_api:\n+        # Handle pandas nullable dtypes by converting to corresponding numpy dtype\n+        if hasattr(y, \"dtype\") and str(y.dtype) in (\"Int64\", \"Float64\", \"boolean\"):\n+            # Convert to corresponding numpy dtype\n+            if str(y.dtype) == \"Int64\":\n+                y = y.astype(\"int64\")\n+            elif str(y.dtype) == \"Float64\":\n+                y = y.astype(\"float64\")\n+            elif str(y.dtype) == \"boolean\":\n+                y = y.astype(\"bool\")\n         return xp.unique_values(xp.asarray(y))\n     else:\n         return set(y)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

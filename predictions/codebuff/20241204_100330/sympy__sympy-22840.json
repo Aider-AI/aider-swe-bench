@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-22840",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/simplify/cse_main.py b/sympy/simplify/cse_main.py\nindex d649dd02a9..a49baa398e 100644\n--- a/sympy/simplify/cse_main.py\n+++ b/sympy/simplify/cse_main.py\n@@ -1,6 +1,8 @@\n \"\"\" Tools for doing common subexpression elimination.\n \"\"\"\n from sympy.core import Basic, Mul, Add, Pow, sympify\n+from sympy.matrices.expressions.matexpr import MatrixElement\n+from sympy.matrices.expressions.matexpr import MatrixElement\n from sympy.core.containers import Tuple, OrderedSet\n from sympy.core.exprtools import factor_terms\n from sympy.core.singleton import S\n@@ -595,6 +597,10 @@ def _find_repeated(expr):\n             args = expr\n \n         else:\n+            # Skip MatrixSymbol indexing operations to prevent unnecessary variables\n+            if isinstance(expr, MatrixElement):\n+                return\n+\n             if expr in seen_subexp:\n                 for ign in ignore:\n                     if ign in expr.free_symbols:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

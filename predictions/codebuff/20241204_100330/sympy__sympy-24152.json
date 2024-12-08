@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-24152",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/physics/quantum/tensorproduct.py b/sympy/physics/quantum/tensorproduct.py\nindex 78accaf295..b32d2a4388 100644\n--- a/sympy/physics/quantum/tensorproduct.py\n+++ b/sympy/physics/quantum/tensorproduct.py\n@@ -246,9 +246,10 @@ def _eval_expand_tensorproduct(self, **hints):\n             if isinstance(args[i], Add):\n                 for aa in args[i].args:\n                     tp = TensorProduct(*args[:i] + (aa,) + args[i + 1:])\n-                    if isinstance(tp, TensorProduct):\n-                        tp = tp._eval_expand_tensorproduct()\n-                    add_args.append(tp)\n+                    c_part, nc_part = tp.args_cnc()\n+                    if len(nc_part)==1 and isinstance(nc_part[0], TensorProduct):\n+                        nc_part = (nc_part[0]._eval_expand_tensorproduct(), )\n+                    add_args.append(Mul(*c_part)*Mul(*nc_part))\n                 break\n \n         if add_args:\ndiff --git a/sympy/physics/quantum/tests/test_tensorproduct.py b/sympy/physics/quantum/tests/test_tensorproduct.py\nindex f1765640ea..45054179d6 100644\n--- a/sympy/physics/quantum/tests/test_tensorproduct.py\n+++ b/sympy/physics/quantum/tests/test_tensorproduct.py\n@@ -45,6 +45,10 @@ def test_tensor_product_expand():\n     assert TP(A + B, B + C).expand(tensorproduct=True) == \\\n         TP(A, B) + TP(A, C) + TP(B, B) + TP(B, C)\n \n+    # Test scalar factors in tensor product expansion\n+    assert TP(2*A - B, U + V).expand(tensorproduct=True) == \\\n+        2*TP(A, U) + 2*TP(A, V) - TP(B, U) - TP(B, V)\n+\n \n def test_tensor_product_commutator():\n     assert TP(Comm(A, B), C).doit().expand(tensorproduct=True) == \\\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

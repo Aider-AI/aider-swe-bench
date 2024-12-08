@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-18869",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py\nindex b657a35cf7..c7a5c3785b 100644\n--- a/lib/matplotlib/__init__.py\n+++ b/lib/matplotlib/__init__.py\n@@ -148,6 +148,15 @@ def __getattr__(name):\n         else:  # Get the version from the _version.py setuptools_scm file.\n             __version__ = _version.version\n         return __version__\n+    elif name == \"version_info\":\n+        # Parse version string into a tuple for easy comparison\n+        ver = __version__.split('.')\n+        if len(ver) >= 3:\n+            major, minor, patch = map(int, ver[:3])\n+            # Handle any additional parts (e.g. dev, post, etc.)\n+            extra = ver[3] if len(ver) > 3 else ''\n+            return (major, minor, patch, extra)\n+        return tuple(map(int, ver))  # Fallback for unusual version strings\n     raise AttributeError(f\"module {__name__!r} has no attribute {name!r}\")\n \n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

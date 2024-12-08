@@ -1,0 +1,9 @@
+{
+    "instance_id": "psf__requests-3362",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/requests/models.py b/requests/models.py\nindex fbb3c7e6..b713571f 100644\n--- a/requests/models.py\n+++ b/requests/models.py\n@@ -695,7 +695,12 @@ class Response(object):\n         chunks = reused_chunks if self._content_consumed else stream_chunks\n \n         if decode_unicode:\n-            chunks = stream_decode_response_unicode(chunks, self)\n+            if self.encoding is None:\n+                self.encoding = self.apparent_encoding\n+            decoder = codecs.getincrementaldecoder(self.encoding)(errors='replace')\n+            chunks = (decoder.decode(chunk) if isinstance(chunk, bytes) else chunk\n+                     for chunk in chunks)\n+            chunks = (chunk for chunk in chunks if chunk)  # Remove empty chunks\n \n         return chunks\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

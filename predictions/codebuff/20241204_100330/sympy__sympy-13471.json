@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-13471",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/core/numbers.py b/sympy/core/numbers.py\nindex 7bc96e68eb..10b1a7b56d 100644\n--- a/sympy/core/numbers.py\n+++ b/sympy/core/numbers.py\n@@ -1037,11 +1037,14 @@ def __new__(cls, num, dps=None, prec=None, precision=None):\n                     _mpf_ = _mpf_ninf\n             else:\n                 raise ValueError(\"unexpected decimal value %s\" % str(num))\n-        elif isinstance(num, tuple) and len(num) in (3, 4):\n+        el        if isinstance(num, tuple) and len(num) in (3, 4):\n             if type(num[1]) is str:\n                 # it's a hexadecimal (coming from a pickled object)\n                 # assume that it is in standard form\n                 num = list(num)\n+                # Handle legacy Python 2 'L' suffix in hex strings\n+                if num[1].endswith('L'):\n+                    num[1] = num[1][:-1]\n                 num[1] = long(num[1], 16)\n                 _mpf_ = tuple(num)\n             else:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

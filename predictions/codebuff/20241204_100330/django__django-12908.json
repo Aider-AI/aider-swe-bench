@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12908",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/sql/compiler.py b/django/db/models/sql/compiler.py\nindex 09a9d73077..52a0649449 100644\n--- a/django/db/models/sql/compiler.py\n+++ b/django/db/models/sql/compiler.py\n@@ -479,6 +479,11 @@ class SQLCompiler:\n         params = []\n         for part in args_parts:\n             params.extend(part)\n+        # If this is a combined query with distinct fields, wrap it in a subquery\n+        # so DISTINCT ON can be applied to the entire result\n+        if self.query.distinct_fields:\n+            distinct_fields = ', '.join(self.quote_name_unless_alias(field) for field in self.query.distinct_fields)\n+            result = ['SELECT DISTINCT ON ({}) * FROM ({}) AS combined_query'.format(distinct_fields, result[0])]\n         return result, params\n \n     def as_sql(self, with_limits=True, with_col_aliases=False):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

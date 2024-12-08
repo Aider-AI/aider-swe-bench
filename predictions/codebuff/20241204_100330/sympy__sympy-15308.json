@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-15308",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/matrices/expressions/trace.py b/sympy/matrices/expressions/trace.py\nindex 4a07d6a1f4..417ca25d33 100644\n--- a/sympy/matrices/expressions/trace.py\n+++ b/sympy/matrices/expressions/trace.py\n@@ -72,6 +72,9 @@ def _eval_rewrite_as_Sum(self, **kwargs):\n         i = Dummy('i')\n         return Sum(self.arg[i, i], (i, 0, self.arg.rows-1)).doit()\n \n+    def _latex(self, printer):\n+        return r\"\\operatorname{tr}\\left(%s\\right)\" % printer._print(self.arg)\n+\n \n def trace(expr):\n     \"\"\" Trace of a Matrix.  Sum of the diagonal elements\ndiff --git a/sympy/printing/latex.py b/sympy/printing/latex.py\nindex a0eb97792e..4afc0aaffb 100644\n--- a/sympy/printing/latex.py\n+++ b/sympy/printing/latex.py\n@@ -2186,9 +2186,8 @@ def _print_Differential(self, diff):\n             return r'\\mathrm{d}\\left(%s\\right)' % string\n \n     def _print_Tr(self, p):\n-        #Todo: Handle indices\n         contents = self._print(p.args[0])\n-        return r'\\mbox{Tr}\\left(%s\\right)' % (contents)\n+        return r'\\operatorname{tr}\\left(%s\\right)' % (contents)\n \n     def _print_totient(self, expr, exp=None):\n         if exp is not None:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

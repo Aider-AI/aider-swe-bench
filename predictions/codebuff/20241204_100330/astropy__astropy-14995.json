@@ -1,0 +1,9 @@
+{
+    "instance_id": "astropy__astropy-14995",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py\nindex 4153dfccb2..df1e904b18 100644\n--- a/astropy/nddata/mixins/ndarithmetic.py\n+++ b/astropy/nddata/mixins/ndarithmetic.py\n@@ -513,14 +513,17 @@ class NDArithmeticMixin:\n             ``handle_mask`` must create (and copy) the returned mask.\n         \"\"\"\n         # If only one mask is present we need not bother about any type checks\n-        if (\n-            self.mask is None and operand is not None and operand.mask is None\n-        ) or handle_mask is None:\n+        if handle_mask is None:\n             return None\n-        elif self.mask is None and operand is not None:\n+        elif operand is None:\n+            return deepcopy(self.mask)\n+        elif self.mask is None and operand.mask is None:\n+            return None\n+        elif self.mask is None:\n             # Make a copy so there is no reference in the result.\n             return deepcopy(operand.mask)\n-        elif operand is None:\n+        elif operand.mask is None:\n+            # Make a copy so there is no reference in the result.\n             return deepcopy(self.mask)\n         else:\n             # Now lets calculate the resulting mask (operation enforces copy)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

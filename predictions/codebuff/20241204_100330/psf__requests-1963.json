@@ -1,0 +1,9 @@
+{
+    "instance_id": "psf__requests-1963",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/requests/sessions.py b/requests/sessions.py\nindex 425db22c..9a5d2beb 100644\n--- a/requests/sessions.py\n+++ b/requests/sessions.py\n@@ -89,6 +89,11 @@ class SessionRedirectMixin(object):\n \n         while resp.is_redirect:\n             prepared_request = req.copy()\n+            # Get current request method - use the previous request's method \n+            # since it may have been changed by a redirect (e.g. 303 See Other)\n+            current_method = prepared_request.method\n+            if i > 0:\n+                current_method = resp.request.method\n \n             resp.content  # Consume socket so it can be released\n \n@@ -106,6 +111,23 @@ class SessionRedirectMixin(object):\n                 parsed_rurl = urlparse(resp.url)\n                 url = '%s:%s' % (parsed_rurl.scheme, url)\n \n+            # http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.4\n+            if (resp.status_code == codes.see_other and\n+                    current_method != 'HEAD'):\n+                current_method = 'GET'\n+\n+            # Do what the browsers do, despite standards...\n+            # First, turn 302s into GETs.\n+            if resp.status_code == codes.found and current_method != 'HEAD':\n+                current_method = 'GET'\n+\n+            # Second, if a POST is responded to with a 301, turn it into a GET.\n+            # This bizarre behaviour is explained in Issue 1704.\n+            if resp.status_code == codes.moved and current_method == 'POST':\n+                current_method = 'GET'\n+\n+            prepared_request.method = current_method\n+\n             # The scheme should be lower case...\n             parsed = urlparse(url)\n             url = parsed.geturl()\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

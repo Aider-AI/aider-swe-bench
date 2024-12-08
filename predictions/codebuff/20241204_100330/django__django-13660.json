@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13660",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/commands/shell.py b/django/core/management/commands/shell.py\nindex 2b306a579e..5d92c33fc6 100644\n--- a/django/core/management/commands/shell.py\n+++ b/django/core/management/commands/shell.py\n@@ -84,13 +84,15 @@ class Command(BaseCommand):\n     def handle(self, **options):\n         # Execute the command and exit.\n         if options['command']:\n-            exec(options['command'])\n+            globals_dict = {'__name__': '__main__', '__file__': None, '__builtins__': __builtins__}\n+            exec(options['command'], globals_dict)\n             return\n \n         # Execute stdin if it has anything to read and exit.\n         # Not supported on Windows due to select.select() limitations.\n         if sys.platform != 'win32' and not sys.stdin.isatty() and select.select([sys.stdin], [], [], 0)[0]:\n-            exec(sys.stdin.read())\n+            globals_dict = {'__name__': '__main__', '__file__': None, '__builtins__': __builtins__}\n+            exec(sys.stdin.read(), globals_dict)\n             return\n \n         available_shells = [options['interface']] if options['interface'] else self.shells\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

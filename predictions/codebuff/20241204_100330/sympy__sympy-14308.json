@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-14308",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/vector/basisdependent.py b/sympy/vector/basisdependent.py\nindex 4252c4aadc..d9d5c5bca4 100755\n--- a/sympy/vector/basisdependent.py\n+++ b/sympy/vector/basisdependent.py\n@@ -294,8 +294,10 @@ def __new__(cls, *args, **options):\n \n     def __str__(self, printer=None):\n         measure_str = self._measure_number.__str__()\n+        # Add parentheses if the measure number is not a simple term\n         if ('(' in measure_str or '-' in measure_str or\n-                '+' in measure_str):\n+                '+' in measure_str or '/' in measure_str or\n+                '**' in measure_str):\n             measure_str = '(' + measure_str + ')'\n         return measure_str + '*' + self._base_instance.__str__(printer)\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

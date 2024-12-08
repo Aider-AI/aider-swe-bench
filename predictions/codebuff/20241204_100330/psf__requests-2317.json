@@ -1,0 +1,9 @@
+{
+    "instance_id": "psf__requests-2317",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/requests/sessions.py b/requests/sessions.py\nindex d701ff2e..7015eba6 100644\n--- a/requests/sessions.py\n+++ b/requests/sessions.py\n@@ -425,6 +425,8 @@ class Session(SessionRedirectMixin):\n             If Tuple, ('cert', 'key') pair.\n         \"\"\"\n \n+        if isinstance(method, bytes):\n+            method = method.decode('utf-8')\n         method = builtin_str(method)\n \n         # Create the Request.\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

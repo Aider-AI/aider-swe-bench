@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-20590",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/core/symbol.py b/sympy/core/symbol.py\nindex 70e6953559..eca555bfc7 100644\n--- a/sympy/core/symbol.py\n+++ b/sympy/core/symbol.py\n@@ -186,6 +186,8 @@ class Symbol(AtomicExpr, Boolean):\n \n     You can override the default assumptions in the constructor.\n \n+    Note: Symbol instances have no __dict__ attribute since they use __slots__.\n+\n     Examples\n     ========\n \n@@ -200,7 +202,8 @@ class Symbol(AtomicExpr, Boolean):\n \n     is_comparable = False\n \n-    __slots__ = ('name',)\n+    # Define __slots__ to prevent instance dictionaries\n+    __slots__ = ('name', '_assumptions')\n \n     is_Symbol = True\n     is_symbol = True\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

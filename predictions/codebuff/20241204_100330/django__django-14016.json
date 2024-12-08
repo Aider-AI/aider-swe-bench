@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14016",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py\nindex c2623f099f..b6be985b8b 100644\n--- a/django/db/models/query_utils.py\n+++ b/django/db/models/query_utils.py\n@@ -38,7 +38,22 @@ class Q(tree.Node):\n     conditional = True\n \n     def __init__(self, *args, _connector=None, _negated=False, **kwargs):\n-        super().__init__(children=[*args, *sorted(kwargs.items())], connector=_connector, negated=_negated)\n+        # Convert dict_keys objects to lists to ensure they can be pickled\n+        processed_args = []\n+        for arg in args:\n+            if isinstance(arg, Q):\n+                processed_args.append(arg)\n+            else:\n+                processed_args.append(self._prepare_data(arg))\n+        processed_kwargs = {k: self._prepare_data(v) for k, v in kwargs.items()}\n+        super().__init__(children=[*processed_args, *sorted(processed_kwargs.items())], \n+                        connector=_connector, negated=_negated)\n+\n+    def _prepare_data(self, value):\n+        \"\"\"Convert unpicklable objects to picklable ones.\"\"\"\n+        if isinstance(value, type({}.keys())):\n+            return list(value)\n+        return value\n \n     def _combine(self, other, conn):\n         if not isinstance(other, Q):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

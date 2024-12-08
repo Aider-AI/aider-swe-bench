@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-25332",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/figure.py b/lib/matplotlib/figure.py\nindex b4c38368bf..8ba4c7f120 100644\n--- a/lib/matplotlib/figure.py\n+++ b/lib/matplotlib/figure.py\n@@ -2722,6 +2722,17 @@ None}, default: None\n         else:\n             return _get_renderer(self)\n \n+    def __getstate__(self):\n+        state = super().__getstate__()\n+        # Don't pickle the grouper objects since they contain weak refs\n+        state.pop('_align_label_groups', None)\n+        return state\n+\n+    def __setstate__(self, state):\n+        super().__setstate__(state)\n+        # Restore empty groupers\n+        self._align_label_groups = {\"x\": cbook.Grouper(), \"y\": cbook.Grouper()}\n+\n     def _get_dpi(self):\n         return self._dpi\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

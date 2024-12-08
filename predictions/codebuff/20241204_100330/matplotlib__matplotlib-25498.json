@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-25498",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/colorbar.py b/lib/matplotlib/colorbar.py\nindex d3d53e3d98..e10a030a4d 100644\n--- a/lib/matplotlib/colorbar.py\n+++ b/lib/matplotlib/colorbar.py\n@@ -507,10 +507,12 @@ class Colorbar:\n         self.mappable = mappable\n         self.set_alpha(mappable.get_alpha())\n         self.cmap = mappable.cmap\n-        if mappable.norm != self.norm:\n-            self.norm = mappable.norm\n-            self._reset_locator_formatter_scale()\n-\n+        \n+        # Always update the norm to match the mappable\n+        self.norm = mappable.norm\n+        self._reset_locator_formatter_scale()\n+        self._process_values()\n+        \n         self._draw_all()\n         if isinstance(self.mappable, contour.ContourSet):\n             CS = self.mappable\n@@ -1075,8 +1077,12 @@ class Colorbar:\n                 # bracket values by 1/2 dv:\n                 b = np.zeros(len(self.values) + 1)\n                 b[1:-1] = 0.5 * (self._values[:-1] + self._values[1:])\n-                b[0] = 2.0 * b[1] - b[2]\n-                b[-1] = 2.0 * b[-2] - b[-3]\n+                if len(b) > 2:  # Avoid division by zero for small arrays\n+                    b[0] = 2.0 * b[1] - b[2]\n+                    b[-1] = 2.0 * b[-2] - b[-3]\n+                else:\n+                    b[0] = self._values[0] - 0.5\n+                    b[-1] = self._values[-1] + 0.5\n                 self._boundaries = b\n                 return\n             self._boundaries = np.array(self.boundaries)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12983",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/utils/text.py b/django/utils/text.py\nindex fb5f6298c4..5aefb80f9d 100644\n--- a/django/utils/text.py\n+++ b/django/utils/text.py\n@@ -403,7 +403,8 @@ def slugify(value, allow_unicode=False):\n     else:\n         value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')\n     value = re.sub(r'[^\\w\\s-]', '', value.lower()).strip()\n-    return re.sub(r'[-\\s]+', '-', value)\n+    value = re.sub(r'[-\\s]+', '-', value)\n+    return value.strip('-_')\n \n \n def camel_case_to_spaces(value):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

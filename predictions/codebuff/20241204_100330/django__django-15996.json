@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15996",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/serializer.py b/django/db/migrations/serializer.py\nindex 38da1e6ecc..29060ae167 100644\n--- a/django/db/migrations/serializer.py\n+++ b/django/db/migrations/serializer.py\n@@ -125,6 +125,20 @@ class EnumSerializer(BaseSerializer):\n     def serialize(self):\n         enum_class = self.value.__class__\n         module = enum_class.__module__\n+        if hasattr(enum_class, \"_decompose\") and not hasattr(self.value, \"name\"):\n+            # This is a combination of flags\n+            names = []\n+            for flag in enum_class._decompose(self.value):\n+                names.append(enum_class(flag).name)\n+            if not names:\n+                return \"%s.%s[None]\" % (module, enum_class.__qualname__), {\"import %s\" % module}\n+            return (\n+                \"%s.%s[%r] | %s.%s[%r]\" % (\n+                    module, enum_class.__qualname__, names[0],\n+                    module, enum_class.__qualname__, \" | \".join(names[1:])\n+                ),\n+                {\"import %s\" % module},\n+            )\n         return (\n             \"%s.%s[%r]\" % (module, enum_class.__qualname__, self.value.name),\n             {\"import %s\" % module},\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

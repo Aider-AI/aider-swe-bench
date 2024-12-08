@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12747",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/deletion.py b/django/db/models/deletion.py\nindex 16dff6a1cd..3c6e1f86a9 100644\n--- a/django/db/models/deletion.py\n+++ b/django/db/models/deletion.py\n@@ -388,6 +388,11 @@ class Collector:\n         # number of objects deleted for each model label\n         deleted_counter = Counter()\n \n+        # Ensure the queried model is always included in results\n+        if self.data:\n+            main_model = next(iter(self.data))\n+            deleted_counter[main_model._meta.label] = 0\n+\n         # Optimize for the case with a single obj and no dependencies\n         if len(self.data) == 1 and len(instances) == 1:\n             instance = list(instances)[0]\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

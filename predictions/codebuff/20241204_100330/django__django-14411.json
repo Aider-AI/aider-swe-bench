@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14411",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py\nindex 20d8922799..29dd57145f 100644\n--- a/django/contrib/auth/forms.py\n+++ b/django/contrib/auth/forms.py\n@@ -34,6 +34,9 @@ class ReadOnlyPasswordHashWidget(forms.Widget):\n     template_name = 'auth/widgets/read_only_password_hash.html'\n     read_only = True\n \n+    def id_for_label(self, id_):\n+        return None\n+\n     def get_context(self, name, value, attrs):\n         context = super().get_context(name, value, attrs)\n         summary = []\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

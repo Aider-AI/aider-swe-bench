@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14997",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/backends/sqlite3/schema.py b/django/db/backends/sqlite3/schema.py\nindex f0c81c123b..0d4fcfc9fc 100644\n--- a/django/db/backends/sqlite3/schema.py\n+++ b/django/db/backends/sqlite3/schema.py\n@@ -279,7 +279,17 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):\n         new_model = type('New%s' % model._meta.object_name, model.__bases__, body_copy)\n \n         # Create a new table with the updated schema.\n+        # First, temporarily remove any unique constraints with F() expressions\n+        saved_constraints = []\n+        for constraint in model._meta.constraints:\n+            if isinstance(constraint, UniqueConstraint) and constraint.contains_expressions:\n+                model._meta.constraints.remove(constraint)\n+                saved_constraints.append(constraint)\n+                \n         self.create_model(new_model)\n+        \n+        # Restore the saved constraints\n+        model._meta.constraints.extend(saved_constraints)\n \n         # Copy data from the old table into the new table\n         self.execute(\"INSERT INTO %s (%s) SELECT %s FROM %s\" % (\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

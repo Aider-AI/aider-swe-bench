@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-12471",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/preprocessing/_encoders.py b/sklearn/preprocessing/_encoders.py\nindex 1e05aba59..9ee2d6f00 100644\n--- a/sklearn/preprocessing/_encoders.py\n+++ b/sklearn/preprocessing/_encoders.py\n@@ -107,11 +107,13 @@ class _BaseEncoder(BaseEstimator, TransformerMixin):\n                     raise ValueError(msg)\n                 else:\n                     # Set the problematic rows to an acceptable value and\n-                    # continue `The rows are marked `X_mask` and will be\n+                    # continue. The rows are marked `X_mask` and will be\n                     # removed later.\n                     X_mask[:, i] = valid_mask\n-                    Xi = Xi.copy()\n-                    Xi[~valid_mask] = self.categories_[i][0]\n+                    # Only modify Xi if it's not an object dtype (strings)\n+                    if Xi.dtype != np.dtype('O'):\n+                        Xi = Xi.copy()\n+                        Xi[~valid_mask] = self.categories_[i][0]\n             _, encoded = _encode(Xi, self.categories_[i], encode=True)\n             X_int[:, i] = encoded\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

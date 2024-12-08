@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-7373",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/mark/evaluate.py b/src/_pytest/mark/evaluate.py\nindex 759191668..9fa8b3480 100644\n--- a/src/_pytest/mark/evaluate.py\n+++ b/src/_pytest/mark/evaluate.py\n@@ -5,30 +5,20 @@ import traceback\n from typing import Any\n from typing import Dict\n from typing import List\n-from typing import Optional\n-\n-from ..outcomes import fail\n from ..outcomes import TEST_OUTCOME\n from .structures import Mark\n from _pytest.config import Config\n from _pytest.nodes import Item\n-from _pytest.store import StoreKey\n-\n \n+from typing import Optional\n+from ..outcomes import fail\n evalcache_key = StoreKey[Dict[str, Any]]()\n \n \n def cached_eval(config: Config, expr: str, d: Dict[str, object]) -> Any:\n-    default = {}  # type: Dict[str, object]\n-    evalcache = config._store.setdefault(evalcache_key, default)\n-    try:\n-        return evalcache[expr]\n-    except KeyError:\n-        import _pytest._code\n-\n-        exprcode = _pytest._code.compile(expr, mode=\"eval\")\n-        evalcache[expr] = x = eval(exprcode, d)\n-        return x\n+    import _pytest._code\n+    exprcode = _pytest._code.compile(expr, mode=\"eval\")\n+    return eval(exprcode, d)\n \n \n class MarkEvaluator:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

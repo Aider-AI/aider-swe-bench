@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11905",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/lookups.py b/django/db/models/lookups.py\nindex 9344979c56..820e3c3e7e 100644\n--- a/django/db/models/lookups.py\n+++ b/django/db/models/lookups.py\n@@ -462,6 +462,11 @@ class IsNull(BuiltinLookup):\n     lookup_name = 'isnull'\n     prepare_rhs = False\n \n+    def get_prep_lookup(self):\n+        if not isinstance(self.rhs, bool):\n+            raise ValueError('The __isnull lookup only accepts boolean values.')\n+        return self.rhs\n+\n     def as_sql(self, compiler, connection):\n         sql, params = compiler.compile(self.lhs)\n         if self.rhs:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

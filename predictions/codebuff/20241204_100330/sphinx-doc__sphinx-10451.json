@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-10451",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/ext/autodoc/typehints.py b/sphinx/ext/autodoc/typehints.py\nindex d912cd7d5..8ed110c12 100644\n--- a/sphinx/ext/autodoc/typehints.py\n+++ b/sphinx/ext/autodoc/typehints.py\n@@ -96,11 +96,18 @@ def modify_field_list(node: nodes.field_list, annotations: Dict[str, str],\n         if parts[0] == 'param':\n             if len(parts) == 2:\n                 # :param xxx:\n-                arg = arguments.setdefault(parts[1], {})\n+                name = parts[1]\n+                if name.startswith('*') or name.startswith('**'):\n+                    # Skip adding param entry for *args/**kwargs as they'll be handled by type\n+                    continue\n+                arg = arguments.setdefault(name, {})\n                 arg['param'] = True\n             elif len(parts) > 2:\n                 # :param xxx yyy:\n                 name = ' '.join(parts[2:])\n+                if name.startswith('*') or name.startswith('**'):\n+                    # Skip adding param entry for *args/**kwargs as they'll be handled by type\n+                    continue\n                 arg = arguments.setdefault(name, {})\n                 arg['param'] = True\n                 arg['type'] = True\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

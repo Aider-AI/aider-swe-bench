@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11620",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/urls/converters.py b/django/urls/converters.py\nindex bb8478e32f..888dbcca96 100644\n--- a/django/urls/converters.py\n+++ b/django/urls/converters.py\n@@ -6,7 +6,10 @@ class IntConverter:\n     regex = '[0-9]+'\n \n     def to_python(self, value):\n-        return int(value)\n+        try:\n+            return int(value)\n+        except ValueError as e:\n+            raise Http404(str(e)) from e\n \n     def to_url(self, value):\n         return str(value)\ndiff --git a/django/urls/resolvers.py b/django/urls/resolvers.py\nindex 2154a46320..71c04a3efc 100644\n--- a/django/urls/resolvers.py\n+++ b/django/urls/resolvers.py\n@@ -540,7 +540,9 @@ class URLResolver:\n             for pattern in self.url_patterns:\n                 try:\n                     sub_match = pattern.resolve(new_path)\n-                except Resolver404 as e:\n+                except (Resolver404, Http404) as e:\n+                    if isinstance(e, Http404):\n+                        raise  # Let Http404 propagate up\n                     sub_tried = e.args[0].get('tried')\n                     if sub_tried is not None:\n                         tried.extend([pattern] + t for t in sub_tried)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-25433",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/widgets.py b/lib/matplotlib/widgets.py\nindex ebe5da43e2..1aa2745724 100644\n--- a/lib/matplotlib/widgets.py\n+++ b/lib/matplotlib/widgets.py\n@@ -2890,6 +2890,8 @@ class SpanSelector(_SelectorWidget):\n         self.extents = vmin, vmax\n \n         if self.onmove_callback is not None:\n+            # Defer the callback to avoid redrawing during mouse movement\n+            self.canvas.draw_idle()\n             self.onmove_callback(vmin, vmax)\n \n         return False\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

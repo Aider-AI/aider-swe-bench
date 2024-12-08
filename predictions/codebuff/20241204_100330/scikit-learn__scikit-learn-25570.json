@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-25570",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/compose/_column_transformer.py b/sklearn/compose/_column_transformer.py\nindex a26145117..1a755cf3f 100644\n--- a/sklearn/compose/_column_transformer.py\n+++ b/sklearn/compose/_column_transformer.py\n@@ -476,9 +476,11 @@ class ColumnTransformer(TransformerMixin, _BaseComposition):\n         \"\"\"\n         column_indices = self._transformer_to_input_indices[name]\n         names = feature_names_in[column_indices]\n-        if trans == \"drop\" or _is_empty_column_selection(column):\n+        if trans == \"drop\":\n             return\n         elif trans == \"passthrough\":\n+            if _is_empty_column_selection(column):\n+                return np.array([], dtype=object)\n             return names\n \n         # An actual transformer\n@@ -549,6 +551,7 @@ class ColumnTransformer(TransformerMixin, _BaseComposition):\n                 chain.from_iterable(\n                     (f\"{name}__{i}\" for i in feature_names_out)\n                     for name, feature_names_out in transformer_with_feature_names_out\n+                    if len(feature_names_out) > 0\n                 )\n             )\n             return np.asarray(names, dtype=object)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

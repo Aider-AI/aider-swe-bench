@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-25442",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/offsetbox.py b/lib/matplotlib/offsetbox.py\nindex 77768e7383..08b9645659 100644\n--- a/lib/matplotlib/offsetbox.py\n+++ b/lib/matplotlib/offsetbox.py\n@@ -1544,9 +1544,10 @@ class DraggableBase:\n         if self._check_still_parented() and self.got_artist:\n             self.finalize_offset()\n             self.got_artist = False\n-            self.canvas.mpl_disconnect(self._c1)\n+            if hasattr(self, '_c1'):\n+                self.canvas.mpl_disconnect(self._c1)\n \n-            if self._use_blit:\n+            if self._use_blit and self.ref_artist is not None:\n                 self.ref_artist.set_animated(False)\n \n     def _check_still_parented(self):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

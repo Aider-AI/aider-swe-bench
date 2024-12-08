@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14608",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/forms/formsets.py b/django/forms/formsets.py\nindex a89c35599f..2d42f95a2c 100644\n--- a/django/forms/formsets.py\n+++ b/django/forms/formsets.py\n@@ -297,6 +297,11 @@ class BaseFormSet:\n             self.full_clean()\n         return self._non_form_errors\n \n+    @property\n+    def non_form_error_list(self):\n+        \"\"\"Return an ErrorList of errors that aren't associated with a particular form.\"\"\"\n+        return self.error_class(self.non_form_errors(), error_class='nonform')\n+\n     @property\n     def errors(self):\n         \"\"\"Return a list of form.errors for every form in self.forms.\"\"\"\n@@ -333,7 +338,7 @@ class BaseFormSet:\n         self._non_form_errors.\n         \"\"\"\n         self._errors = []\n-        self._non_form_errors = self.error_class()\n+        self._non_form_errors = self.error_class(error_class='nonform')\n         empty_forms_count = 0\n \n         if not self.is_bound:  # Stop further processing.\ndiff --git a/django/forms/utils.py b/django/forms/utils.py\nindex 50412f414b..4f0522e233 100644\n--- a/django/forms/utils.py\n+++ b/django/forms/utils.py\n@@ -86,6 +86,8 @@ class ErrorList(UserList, list):\n \n         if error_class is None:\n             self.error_class = 'errorlist'\n+        elif error_class == 'nonform':\n+            self.error_class = 'errorlist nonform'\n         else:\n             self.error_class = 'errorlist {}'.format(error_class)\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-7490",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/runner.py b/src/_pytest/runner.py\nindex 69754ad5e..ce4665d5d 100644\n--- a/src/_pytest/runner.py\n+++ b/src/_pytest/runner.py\n@@ -317,6 +317,9 @@ class CallInfo(Generic[_T]):\n \n \n def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> TestReport:\n+    # Re-evaluate xfail marks after test execution to catch dynamically added marks\n+    if call.when == \"call\":\n+        item._store[xfailed_key] = None  # Reset to re-evaluate\n     return TestReport.from_item_and_call(item, call)\n \n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

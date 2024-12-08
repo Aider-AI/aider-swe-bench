@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-16400",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/commands/migrate.py b/django/core/management/commands/migrate.py\nindex 1541843066..9e93c6c543 100644\n--- a/django/core/management/commands/migrate.py\n+++ b/django/core/management/commands/migrate.py\n@@ -380,14 +380,25 @@ class Command(BaseCommand):\n \n         # Send the post_migrate signal, so individual apps can do whatever they need\n         # to do at this point.\n-        emit_post_migrate_signal(\n-            self.verbosity,\n-            self.interactive,\n-            connection.alias,\n-            stdout=self.stdout,\n-            apps=post_migrate_apps,\n-            plan=plan,\n-        )\n+        # Temporarily override the router's thread-local state to ensure\n+        # post-migrate operations use the correct database\n+        from django.db import router\n+        current_db = getattr(router.router._router_thread_local, 'db', None)\n+        try:\n+            router.router._router_thread_local.db = connection.alias\n+            emit_post_migrate_signal(\n+                self.verbosity,\n+                self.interactive,\n+                connection.alias,\n+                stdout=self.stdout,\n+                apps=post_migrate_apps,\n+                plan=plan,\n+            )\n+        finally:\n+            if current_db is not None:\n+                router.router._router_thread_local.db = current_db\n+            else:\n+                delattr(router.router._router_thread_local, 'db')\n \n     def migration_progress_callback(self, action, migration=None, fake=False):\n         if self.verbosity >= 1:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

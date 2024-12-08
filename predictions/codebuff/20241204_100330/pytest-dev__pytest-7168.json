@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-7168",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/_io/saferepr.py b/src/_pytest/_io/saferepr.py\nindex 23af4d0bb..c00130d01 100644\n--- a/src/_pytest/_io/saferepr.py\n+++ b/src/_pytest/_io/saferepr.py\n@@ -19,8 +19,16 @@ def _format_repr_exception(exc: BaseException, obj: Any) -> str:\n         raise\n     except BaseException as exc:\n         exc_info = \"unpresentable exception ({})\".format(_try_repr_or_str(exc))\n+    try:\n+        class_name = obj.__class__.__name__\n+        obj_id = id(obj)\n+    except:  # noqa: E722\n+        # If we can't get class name or id due to __getattribute__ raising,\n+        # use string representations that don't require attribute access\n+        class_name = type(obj).__name__\n+        obj_id = id(obj)\n     return \"<[{} raised in repr()] {} object at 0x{:x}>\".format(\n-        exc_info, obj.__class__.__name__, id(obj)\n+        exc_info, class_name, obj_id\n     )\n \n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15252",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py\nindex 1a37c6b7d0..48dbfa2964 100644\n--- a/django/db/migrations/recorder.py\n+++ b/django/db/migrations/recorder.py\n@@ -1,5 +1,5 @@\n from django.apps.registry import Apps\n-from django.db import DatabaseError, models\n+from django.db import DatabaseError, models, router\n from django.utils.functional import classproperty\n from django.utils.timezone import now\n \n@@ -62,6 +62,9 @@ class MigrationRecorder:\n         # in the codebase.\n         if self.has_table():\n             return\n+        # Check if router allows migrations on this database\n+        if not router.allow_migrate(self.connection.alias, 'migrations'):\n+            return\n         # Make the table\n         try:\n             with self.connection.schema_editor() as editor:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

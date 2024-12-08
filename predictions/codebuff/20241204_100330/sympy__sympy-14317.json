@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-14317",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/latex.py b/sympy/printing/latex.py\nindex 737e16cc74..481be82465 100644\n--- a/sympy/printing/latex.py\n+++ b/sympy/printing/latex.py\n@@ -1853,16 +1853,17 @@ def _print_PolynomialRingBase(self, expr):\n         return r\"%s%s\\left[%s\\right]\" % (inv, domain, symbols)\n \n     def _print_Poly(self, poly):\n-        cls = poly.__class__.__name__\n-        expr = self._print(poly.as_expr())\n+        terms = self._as_ordered_terms(poly.as_expr(), order=self.order)\n+        tex = \" \".join(self._print(term) for term in terms)\n+        \n         gens = list(map(self._print, poly.gens))\n         domain = \"domain=%s\" % self._print(poly.get_domain())\n \n-        args = \", \".join([expr] + gens + [domain])\n-        if cls in accepted_latex_functions:\n-            tex = r\"\\%s {\\left (%s \\right )}\" % (cls, args)\n+        args = \", \".join([tex] + gens + [domain])\n+        if poly.__class__.__name__ in accepted_latex_functions:\n+            tex = r\"\\%s {\\left (%s \\right )}\" % (poly.__class__.__name__, args)\n         else:\n-            tex = r\"\\operatorname{%s}{\\left( %s \\right)}\" % (cls, args)\n+            tex = r\"\\operatorname{%s}{\\left( %s \\right)}\" % (poly.__class__.__name__, args)\n \n         return tex\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

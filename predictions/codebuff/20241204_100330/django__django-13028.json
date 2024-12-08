@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13028",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py\nindex ce18098fd2..17a8f79d32 100644\n--- a/django/db/models/sql/query.py\n+++ b/django/db/models/sql/query.py\n@@ -1124,7 +1124,7 @@ class Query(BaseExpression):\n \n     def check_filterable(self, expression):\n         \"\"\"Raise an error if expression cannot be used in a WHERE clause.\"\"\"\n-        if not getattr(expression, 'filterable', True):\n+        if hasattr(expression, 'filterable') and not expression.filterable:\n             raise NotSupportedError(\n                 expression.__class__.__name__ + ' is disallowed in the filter '\n                 'clause.'\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

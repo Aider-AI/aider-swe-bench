@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23299",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/pyplot.py b/lib/matplotlib/pyplot.py\nindex e3c66ea67c..c6309a539c 100644\n--- a/lib/matplotlib/pyplot.py\n+++ b/lib/matplotlib/pyplot.py\n@@ -208,7 +208,7 @@ def _get_backend_mod():\n \n def switch_backend(newbackend):\n     \"\"\"\n-    Close all open figures and set the Matplotlib backend.\n+    Set the Matplotlib backend.\n \n     The argument is case-insensitive.  Switching to an interactive backend is\n     possible only if no event loop for another interactive backend has started.\n@@ -222,7 +222,6 @@ def switch_backend(newbackend):\n     global _backend_mod\n     # make sure the init is pulled up so we can assign to it later\n     import matplotlib.backends\n-    close(\"all\")\n \n     if newbackend is rcsetup._auto_backend_sentinel:\n         current_framework = cbook._get_running_interactive_framework()\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

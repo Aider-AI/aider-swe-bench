@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13925",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/conf/project_template/project_name/settings.py-tpl b/django/conf/project_template/project_name/settings.py-tpl\nindex 7830fb2f3c..a14e885131 100644\n--- a/django/conf/project_template/project_name/settings.py-tpl\n+++ b/django/conf/project_template/project_name/settings.py-tpl\n@@ -123,3 +123,8 @@ STATIC_URL = '/static/'\n # https://docs.djangoproject.com/en/{{ docs_version }}/ref/settings/#default-auto-field\n \n DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n+\n+# Default primary key field type\n+# https://docs.djangoproject.com/en/{{ docs_version }}/ref/settings/#default-auto-field\n+\n+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

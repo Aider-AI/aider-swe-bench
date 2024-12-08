@@ -1,0 +1,18 @@
+{
+    "no_generation": [
+        "astropy__astropy-12907"
+    ],
+    "generated": [
+        "astropy__astropy-14995",
+        "astropy__astropy-14365",
+        "astropy__astropy-14182"
+    ],
+    "with_logs": [],
+    "install_fail": [],
+    "reset_failed": [],
+    "no_apply": [],
+    "applied": [],
+    "test_errored": [],
+    "test_timeout": [],
+    "resolved": []
+}

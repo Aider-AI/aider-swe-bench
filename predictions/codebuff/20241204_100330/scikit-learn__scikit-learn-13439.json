@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-13439",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/pipeline.py b/sklearn/pipeline.py\nindex 7eaf9a46f..2cf3d75b3 100644\n--- a/sklearn/pipeline.py\n+++ b/sklearn/pipeline.py\n@@ -159,6 +159,10 @@ class Pipeline(_BaseComposition):\n         self._set_params('steps', **kwargs)\n         return self\n \n+    def __len__(self):\n+        \"\"\"Returns the length of the Pipeline\"\"\"\n+        return len(self.steps)\n+\n     def _validate_steps(self):\n         names, estimators = zip(*self.steps)\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

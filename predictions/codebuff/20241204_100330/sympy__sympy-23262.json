@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-23262",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/python.py b/sympy/printing/python.py\nindex 44ffd5ed74..fd2415cc3f 100644\n--- a/sympy/printing/python.py\n+++ b/sympy/printing/python.py\n@@ -11,6 +11,13 @@\n class PythonPrinter(ReprPrinter, StrPrinter):\n     \"\"\"A printer which converts an expression into its Python interpretation.\"\"\"\n \n+    def _print_seq(self, args, delimiter=', '):\n+        \"\"\"Return a sequence of elements converted to strings\"\"\"\n+        s = delimiter.join([self._print(item) for item in args])\n+        if len(args) == 1:\n+            s += delimiter.rstrip()\n+        return s\n+\n     def __init__(self, settings=None):\n         super().__init__(settings)\n         self.symbols = []\ndiff --git a/sympy/printing/tests/test_python.py b/sympy/printing/tests/test_python.py\nindex 5a0aa4e807..081e457627 100644\n--- a/sympy/printing/tests/test_python.py\n+++ b/sympy/printing/tests/test_python.py\n@@ -26,6 +26,9 @@\n \n \n def test_python_basic():\n+    # Test single-element tuple\n+    assert python(tuple([1])) == \"e = (1,)\"\n+\n     # Simple numbers/symbols\n     assert python(-Rational(1)/2) == \"e = Rational(-1, 2)\"\n     assert python(-Rational(13)/22) == \"e = Rational(-13, 22)\"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

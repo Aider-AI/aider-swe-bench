@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15814",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/query.py b/django/db/models/query.py\nindex be0deb90b0..37e0279e0e 100644\n--- a/django/db/models/query.py\n+++ b/django/db/models/query.py\n@@ -2621,6 +2621,10 @@ def get_related_populators(klass_info, select, db):\n     iterators = []\n     related_klass_infos = klass_info.get(\"related_klass_infos\", [])\n     for rel_klass_info in related_klass_infos:\n+        # Use concrete model's metadata for proxy models\n+        if rel_klass_info[\"model\"]._meta.proxy:\n+            rel_klass_info = rel_klass_info.copy()\n+            rel_klass_info[\"model\"] = rel_klass_info[\"model\"]._meta.concrete_model\n         rel_cls = RelatedPopulator(rel_klass_info, select, db)\n         iterators.append(rel_cls)\n     return iterators\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

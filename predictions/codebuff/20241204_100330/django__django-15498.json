@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-15498",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/views/static.py b/django/views/static.py\nindex 1c558a53ff..3519b786d2 100644\n--- a/django/views/static.py\n+++ b/django/views/static.py\n@@ -126,7 +126,7 @@ def was_modified_since(header=None, mtime=0, size=0):\n       This is the size of the item we're talking about.\n     \"\"\"\n     try:\n-        if header is None:\n+        if header is None or header == '':\n             raise ValueError\n         matches = re.match(r\"^([^;]+)(; length=([0-9]+))?$\", header, re.IGNORECASE)\n         header_mtime = parse_http_date(matches[1])\ndiff --git a/tests/staticfiles_tests/test_views.py b/tests/staticfiles_tests/test_views.py\nindex 44c0cfe17f..efa45dee2c 100644\n--- a/tests/staticfiles_tests/test_views.py\n+++ b/tests/staticfiles_tests/test_views.py\n@@ -45,3 +45,13 @@ class TestServeStaticWithURLHelper(TestDefaults, TestServeStatic):\n     \"\"\"\n     Test static asset serving view with staticfiles_urlpatterns helper.\n     \"\"\"\n+\n+    def test_empty_if_modified_since_header(self):\n+        \"\"\"\n+        Empty If-Modified-Since header is ignored and returns file.\n+        \"\"\"\n+        response = self.client.get(\n+            self.static_url + 'test.txt',\n+            HTTP_IF_MODIFIED_SINCE=''\n+        )\n+        self.assertEqual(response.status_code, 200)\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

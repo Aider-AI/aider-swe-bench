@@ -1,0 +1,9 @@
+{
+    "instance_id": "pylint-dev__pylint-7114",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/pylint/lint/expand_modules.py b/pylint/lint/expand_modules.py\nindex 289e1afce..955cef13b 100644\n--- a/pylint/lint/expand_modules.py\n+++ b/pylint/lint/expand_modules.py\n@@ -24,21 +24,24 @@ def _modpath_from_file(filename: str, is_namespace: bool, path: list[str]) -> li\n \n \n def get_python_path(filepath: str) -> str:\n-    \"\"\"TODO This get the python path with the (bad) assumption that there is always\n-    an __init__.py.\n-\n-    This is not true since python 3.3 and is causing problem.\n+    \"\"\"Get the Python path for a file.\n+    \n+    Returns the first directory going up from filepath that is not a package\n+    (i.e. has no __init__.py) or is the root directory.\n     \"\"\"\n     dirname = os.path.realpath(os.path.expanduser(filepath))\n     if not os.path.isdir(dirname):\n         dirname = os.path.dirname(dirname)\n     while True:\n-        if not os.path.exists(os.path.join(dirname, \"__init__.py\")):\n+        # Stop at root directory\n+        parent = os.path.dirname(dirname)\n+        if parent == dirname:\n             return dirname\n-        old_dirname = dirname\n-        dirname = os.path.dirname(dirname)\n-        if old_dirname == dirname:\n-            return os.getcwd()\n+        # If parent has same-named module, return current dir\n+        parent_module = os.path.join(parent, os.path.basename(dirname) + '.py')\n+        if os.path.exists(parent_module):\n+            return dirname\n+        dirname = parent\n \n \n def _is_in_ignore_list_re(element: str, ignore_list_re: list[Pattern[str]]) -> bool:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23987",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/figure.py b/lib/matplotlib/figure.py\nindex 5bbb786984..d09ccf0fd1 100644\n--- a/lib/matplotlib/figure.py\n+++ b/lib/matplotlib/figure.py\n@@ -1309,8 +1309,10 @@ default: %(va)s\n             The height of the padding between subplots,\n             as a fraction of the average Axes height.\n         \"\"\"\n-        if (self.get_layout_engine() is not None and\n-                not self.get_layout_engine().adjust_compatible):\n+        layout_engine = self.get_layout_engine()\n+        if (layout_engine is not None and\n+                not layout_engine.adjust_compatible and\n+                not isinstance(layout_engine, PlaceHolderLayoutEngine)):\n             _api.warn_external(\n                 \"This figure was using a layout engine that is \"\n                 \"incompatible with subplots_adjust and/or tight_layout; \"\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

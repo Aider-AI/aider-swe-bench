@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-24265",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/doc/users/release_notes_next.rst b/doc/users/release_notes_next.rst\nindex 6813f61c5f..2ceb329007 100644\n--- a/doc/users/release_notes_next.rst\n+++ b/doc/users/release_notes_next.rst\n@@ -8,3 +8,10 @@ Next version\n    next_whats_new\n    ../api/next_api_changes\n    github_stats\n+\n+Style Changes\n+------------\n+\n+The seaborn style names (e.g. 'seaborn-colorblind') have been renamed to include a version prefix\n+(e.g. 'seaborn-v0_8-colorblind') since matplotlib 3.6. The old names will continue to work but\n+will show a deprecation warning. Update your code to use the new style names to avoid the warning.\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

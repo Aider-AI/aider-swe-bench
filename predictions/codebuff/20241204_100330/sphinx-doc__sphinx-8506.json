@@ -1,0 +1,9 @@
+{
+    "instance_id": "sphinx-doc__sphinx-8506",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sphinx/directives/__init__.py b/sphinx/directives/__init__.py\nindex ecfbbd69d..305c031e0 100644\n--- a/sphinx/directives/__init__.py\n+++ b/sphinx/directives/__init__.py\n@@ -98,15 +98,20 @@ class ObjectDescription(SphinxDirective):\n             return [line.strip() for line in lines]\n \n     def handle_signature(self, sig: str, signode: desc_signature) -> Any:\n-        \"\"\"\n-        Parse the signature *sig* into individual nodes and append them to\n+        \"\"\"Parse the signature *sig* into individual nodes and append them to\n         *signode*. If ValueError is raised, parsing is aborted and the whole\n         *sig* is put into a single desc_name node.\n \n         The return value should be a value that identifies the object.  It is\n         passed to :meth:`add_target_and_index()` unchanged, and otherwise only\n         used to skip duplicates.\n+\n+        For option directives, accept any string format.\n         \"\"\"\n+        if self.objtype == 'option':\n+            # Accept any string format for options\n+            signode += addnodes.desc_name(sig, sig)\n+            return sig\n         raise ValueError\n \n     def add_target_and_index(self, name: Any, sig: str, signode: desc_signature) -> None:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

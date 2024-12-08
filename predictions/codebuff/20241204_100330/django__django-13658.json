@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13658",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/core/management/__init__.py b/django/core/management/__init__.py\nindex 1ba093e51f..4bfe90e857 100644\n--- a/django/core/management/__init__.py\n+++ b/django/core/management/__init__.py\n@@ -344,7 +344,11 @@ class ManagementUtility:\n         # Preprocess options to extract --settings and --pythonpath.\n         # These options could affect the commands that are available, so they\n         # must be processed early.\n-        parser = CommandParser(usage='%(prog)s subcommand [options] [args]', add_help=False, allow_abbrev=False)\n+        parser = CommandParser(\n+            prog=self.prog_name,\n+            usage='%(prog)s subcommand [options] [args]',\n+            add_help=False,\n+            allow_abbrev=False)\n         parser.add_argument('--settings')\n         parser.add_argument('--pythonpath')\n         parser.add_argument('args', nargs='*')  # catch-all\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

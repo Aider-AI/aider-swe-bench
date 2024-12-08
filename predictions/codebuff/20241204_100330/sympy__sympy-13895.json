@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-13895",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/core/power.py b/sympy/core/power.py\nindex b2832dd264..b3358898fb 100644\n--- a/sympy/core/power.py\n+++ b/sympy/core/power.py\n@@ -261,6 +261,10 @@ def _eval_power(self, other):\n         if b is S.NaN:\n             return (b**e)**other  # let __new__ handle it\n \n+        # Don't allow simplification of negative bases with variable exponents\n+        if b.could_extract_minus_sign() and not e.is_integer:\n+            return None\n+\n         s = None\n         if other.is_integer:\n             s = 1\ndiff --git a/sympy/simplify/tests/test_powsimp.py b/sympy/simplify/tests/test_powsimp.py\nindex 6a41c23637..f1a4059f13 100644\n--- a/sympy/simplify/tests/test_powsimp.py\n+++ b/sympy/simplify/tests/test_powsimp.py\n@@ -309,3 +309,12 @@ def test_issue_10195():\n def test_issue_11981():\n     x, y = symbols('x y', commutative=False)\n     assert powsimp((x*y)**2 * (y*x)**2) == (x*y)**2 * (y*x)**2\n+\n+def test_negative_base():\n+    from sympy import S\n+    x = Symbol('x')\n+    expr = (-x/4 - S(1)/12)**x - 1\n+    assert powsimp(expr) == expr  # should not simplify\n+    # Test similar cases\n+    assert powsimp((-x)**y) == (-x)**y  # negative base with symbol exp\n+    assert powsimp((-x)**(2*y)) == (-x)**(2*y)  # negative base with multiple of symbol\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

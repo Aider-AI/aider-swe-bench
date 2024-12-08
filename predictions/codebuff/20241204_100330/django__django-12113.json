@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-12113",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/backends/sqlite3/creation.py b/django/db/backends/sqlite3/creation.py\nindex d97052f52d..0d89f2875b 100644\n--- a/django/db/backends/sqlite3/creation.py\n+++ b/django/db/backends/sqlite3/creation.py\n@@ -11,13 +11,17 @@ class DatabaseCreation(BaseDatabaseCreation):\n     @staticmethod\n     def is_in_memory_db(database_name):\n         return not isinstance(database_name, Path) and (\n-            database_name == ':memory:' or 'mode=memory' in database_name\n+            database_name == ':memory:' or 'mode=memory' in database_name or\n+            (isinstance(database_name, str) and database_name.startswith('file:') and 'mode=memory' in database_name)\n         )\n \n     def _get_test_db_name(self):\n         test_database_name = self.connection.settings_dict['TEST']['NAME'] or ':memory:'\n         if test_database_name == ':memory:':\n             return 'file:memorydb_%s?mode=memory&cache=shared' % self.connection.alias\n+        # Add shared cache mode for persistent databases to prevent locking issues\n+        if isinstance(test_database_name, str) and not test_database_name.startswith('file:'):\n+            test_database_name = 'file:%s?cache=shared' % test_database_name\n         return test_database_name\n \n     def _create_test_db(self, verbosity, autoclobber, keepdb=False):\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

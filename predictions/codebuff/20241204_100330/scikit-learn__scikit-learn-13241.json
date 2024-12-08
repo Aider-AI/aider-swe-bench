@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-13241",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/doc/modules/decomposition.rst b/doc/modules/decomposition.rst\nindex 33e93207f..f78240d59 100644\n--- a/doc/modules/decomposition.rst\n+++ b/doc/modules/decomposition.rst\n@@ -178,6 +178,13 @@ has many applications including denoising, compression and structured\n prediction (kernel dependency estimation). :class:`KernelPCA` supports both\n ``transform`` and ``inverse_transform``.\n \n+.. note::\n+    The sign of projections of KernelPCA may be arbitrary, meaning that results\n+    can have their signs flipped between different runs. This is because if v is\n+    an eigenvector of a matrix, then -v is also an eigenvector with the same\n+    eigenvalue. This behavior is similar to standard PCA and other eigenvalue/eigenvector\n+    based methods.\n+\n .. figure:: ../auto_examples/decomposition/images/sphx_glr_plot_kernel_pca_001.png\n     :target: ../auto_examples/decomposition/plot_kernel_pca.html\n     :align: center\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

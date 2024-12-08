@@ -1,0 +1,9 @@
+{
+    "instance_id": "pytest-dev__pytest-11143",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/src/_pytest/assertion/rewrite.py b/src/_pytest/assertion/rewrite.py\nindex 157903faf..24415f0be 100644\n--- a/src/_pytest/assertion/rewrite.py\n+++ b/src/_pytest/assertion/rewrite.py\n@@ -672,15 +672,15 @@ class AssertionRewriter(ast.NodeVisitor):\n         pos = 0\n         item = None\n         for item in mod.body:\n-            if (\n-                expect_docstring\n-                and isinstance(item, ast.Expr)\n-                and isinstance(item.value, ast.Constant)\n-            ):\n-                doc = item.value.value\n-                if self.is_rewrite_disabled(doc):\n-                    return\n-                expect_docstring = False\n+            if expect_docstring and isinstance(item, ast.Expr):\n+                if isinstance(item.value, ast.Constant) and isinstance(item.value.value, str):\n+                    doc = item.value.value\n+                    if self.is_rewrite_disabled(doc):\n+                        return\n+                    expect_docstring = False\n+                else:\n+                    expect_docstring = False\n+                    continue\n             elif (\n                 isinstance(item, ast.ImportFrom)\n                 and item.level == 0\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

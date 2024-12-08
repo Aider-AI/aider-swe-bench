@@ -1,0 +1,9 @@
+{
+    "instance_id": "matplotlib__matplotlib-23913",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/lib/matplotlib/legend.py b/lib/matplotlib/legend.py\nindex 9e5b903d59..103e2788f9 100644\n--- a/lib/matplotlib/legend.py\n+++ b/lib/matplotlib/legend.py\n@@ -306,6 +306,7 @@ class Legend(Artist):\n     def __init__(\n         self, parent, handles, labels,\n         loc=None,\n+        draggable=False,  # whether the legend can be dragged by mouse\n         numpoints=None,      # number of points in the legend line\n         markerscale=None,    # relative size of legend markers vs. original\n         markerfirst=True,    # left/right ordering of legend marker and label\n@@ -314,6 +315,7 @@ class Legend(Artist):\n         prop=None,           # properties for the legend texts\n         fontsize=None,       # keyword to set font size directly\n         labelcolor=None,     # keyword to set the text color\n+        draggable=False,     # whether the legend can be dragged by mouse\n \n         # spacing & pad defined as a fraction of the font-size\n         borderpad=None,      # whitespace inside the legend border\n@@ -358,6 +360,9 @@ class Legend(Artist):\n             and labels should be the same. If they are not, they are truncated\n             to the smaller of both lengths.\n \n+        draggable : bool, default: False\n+            If True, the legend can be dragged by the mouse.\n+\n         Other Parameters\n         ----------------\n         %(_legend_kw_doc)s\n@@ -426,6 +431,9 @@ class Legend(Artist):\n                 _hand.append(handle)\n         labels, handles = _lab, _hand\n \n+        if draggable:\n+            self.set_draggable(True)\n+\n         handles = list(handles)\n         if len(handles) < 2:\n             ncols = 1\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

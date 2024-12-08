@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-11179",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/models/deletion.py b/django/db/models/deletion.py\nindex 92fe4affb9..abcb878f20 100644\n--- a/django/db/models/deletion.py\n+++ b/django/db/models/deletion.py\n@@ -315,6 +315,9 @@ class Collector:\n                         signals.post_delete.send(\n                             sender=model, instance=obj, using=self.using\n                         )\n+                        # Clear PK after delete for models with no dependencies\n+                        if not self.dependencies.get(model._meta.concrete_model):\n+                            setattr(obj, model._meta.pk.attname, None)\n \n         # update collected instances\n         for instances_for_fieldvalues in self.field_updates.values():\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

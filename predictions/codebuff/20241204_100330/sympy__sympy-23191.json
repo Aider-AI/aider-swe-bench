@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-23191",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/physics/vector/tests/test_printing.py b/sympy/physics/vector/tests/test_printing.py\nindex b0c60c5d17..279d75a122 100644\n--- a/sympy/physics/vector/tests/test_printing.py\n+++ b/sympy/physics/vector/tests/test_printing.py\n@@ -43,6 +43,7 @@ def test_latex_printer():\n \n \n def test_vector_pretty_print():\n+    \"\"\"Test pretty printing of vectors\"\"\"\n \n     # TODO : The unit vectors should print with subscripts but they just\n     # print as `n_x` instead of making `x` a subscript with unicode.\n@@ -266,9 +267,21 @@ def test_issue_13354():\n     z = w + v\n \n     expected = \"\"\"(a + b) a_x + (b + c) a_y + (a + c) a_z\"\"\"\n-\n     assert ascii_vpretty(z) == expected\n \n+    # Test coefficient handling\n+    N = ReferenceFrame('N')\n+    expr = 2*N.x + N.y \n+    assert ascii_vpretty(expr) == '2 n_x + n_y'\n+    \n+    # Test negative coefficients\n+    expr = -2*N.x - N.y\n+    assert ascii_vpretty(expr) == '-2 n_x - n_y'\n+    \n+    # Test complex coefficients\n+    expr = (a**2 + 1)*N.x\n+    assert ascii_vpretty(expr) == '(a**2 + 1) n_x'\n+\n \n def test_vector_derivative_printing():\n     # First order\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

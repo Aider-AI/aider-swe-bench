@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-16595",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/migrations/operations/fields.py b/django/db/migrations/operations/fields.py\nindex cd3aab43ad..e2682aeac0 100644\n--- a/django/db/migrations/operations/fields.py\n+++ b/django/db/migrations/operations/fields.py\n@@ -264,6 +264,10 @@ class AlterField(FieldOperation):\n                     field=self.field,\n                 ),\n             ]\n+        elif isinstance(operation, AlterField) and self.is_same_field_operation(\n+            operation\n+        ):\n+            return [operation]\n         return super().reduce(operation, app_label)\n \n \ndiff --git a/tests/migrations/test_optimizer.py b/tests/migrations/test_optimizer.py\nindex 6485009eb4..43d73f11c1 100644\n--- a/tests/migrations/test_optimizer.py\n+++ b/tests/migrations/test_optimizer.py\n@@ -822,6 +822,21 @@ class OptimizerTests(SimpleTestCase):\n             ],\n         )\n \n+    def test_optimize_alter_field(self):\n+        \"\"\"\n+        Multiple AlterField should optimize to the last one.\n+        \"\"\"\n+        self.assertOptimizesTo(\n+            [\n+                migrations.AlterField(\"Foo\", \"name\", models.CharField(max_length=255)),\n+                migrations.AlterField(\"Foo\", \"name\", models.CharField(max_length=225)),\n+                migrations.AlterField(\"Foo\", \"name\", models.CharField(max_length=225, help_text=\"help\")),\n+            ],\n+            [\n+                migrations.AlterField(\"Foo\", \"name\", models.CharField(max_length=225, help_text=\"help\")),\n+            ],\n+        )\n+\n     def _test_create_alter_foo_field(self, alter):\n         \"\"\"\n         CreateModel, AlterFooTogether/AlterOrderWithRespectTo followed by an\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

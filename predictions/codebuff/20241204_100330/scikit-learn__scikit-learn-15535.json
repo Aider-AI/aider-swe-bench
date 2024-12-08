@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-15535",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/metrics/cluster/_supervised.py b/sklearn/metrics/cluster/_supervised.py\nindex 4bddae35c..25b8465a8 100644\n--- a/sklearn/metrics/cluster/_supervised.py\n+++ b/sklearn/metrics/cluster/_supervised.py\n@@ -43,10 +43,12 @@ def check_clusterings(labels_true, labels_pred):\n         The predicted labels.\n     \"\"\"\n     labels_true = check_array(\n-        labels_true, ensure_2d=False, ensure_min_samples=0\n+        labels_true, ensure_2d=False, ensure_min_samples=0,\n+        dtype=None  # Allow any dtype to support string labels\n     )\n     labels_pred = check_array(\n-        labels_pred, ensure_2d=False, ensure_min_samples=0\n+        labels_pred, ensure_2d=False, ensure_min_samples=0,\n+        dtype=None  # Allow any dtype to support string labels\n     )\n \n     # input checks\n@@ -589,10 +591,10 @@ def mutual_info_score(labels_true, labels_pred, contingency=None):\n \n     Parameters\n     ----------\n-    labels_true : int array, shape = [n_samples]\n+    labels_true : array-like of shape (n_samples,)\n         A clustering of the data into disjoint subsets.\n \n-    labels_pred : int array-like of shape (n_samples,)\n+    labels_pred : array-like of shape (n_samples,)\n         A clustering of the data into disjoint subsets.\n \n     contingency : {None, array, sparse matrix}, \\\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

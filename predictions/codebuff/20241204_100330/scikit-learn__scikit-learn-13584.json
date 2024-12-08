@@ -1,0 +1,9 @@
+{
+    "instance_id": "scikit-learn__scikit-learn-13584",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sklearn/utils/_pprint.py b/sklearn/utils/_pprint.py\nindex b8686dba5..8dd20c98c 100644\n--- a/sklearn/utils/_pprint.py\n+++ b/sklearn/utils/_pprint.py\n@@ -336,6 +336,10 @@ def _safe_repr(object, context, maxlevels, level, changed_only=False):\n \n     if typ in pprint._builtin_scalars:\n         return repr(object), True, False\n+        \n+    if hasattr(object, '__array__'):\n+        # Handle numpy arrays\n+        return repr(object), True, False\n \n     r = getattr(typ, \"__repr__\", None)\n     if issubclass(typ, dict) and r is dict.__repr__:\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

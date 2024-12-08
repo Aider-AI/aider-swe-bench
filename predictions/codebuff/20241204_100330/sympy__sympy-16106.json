@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-16106",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/printing/mathml.py b/sympy/printing/mathml.py\nindex 1aa0ee01a2..3d5c3a0b0d 100644\n--- a/sympy/printing/mathml.py\n+++ b/sympy/printing/mathml.py\n@@ -1017,6 +1017,16 @@ def _print_Basic(self, e):\n         mrow.appendChild(brac)\n         return mrow\n \n+    def _print_Indexed(self, e):\n+        x = self.dom.createElement('apply')\n+        x.appendChild(self._print(e.base))\n+        for arg in e.indices:\n+            x.appendChild(self._print(arg))\n+        return x\n+\n+    def _print_IndexedBase(self, e):\n+        return self._print(e.label)\n+\n     def _print_Tuple(self, e):\n         mrow = self.dom.createElement('mrow')\n         x = self.dom.createElement('mfenced')\ndiff --git a/sympy/printing/tests/test_mathml.py b/sympy/printing/tests/test_mathml.py\nindex 74e09fb2b5..63ccbd5199 100644\n--- a/sympy/printing/tests/test_mathml.py\n+++ b/sympy/printing/tests/test_mathml.py\n@@ -1003,6 +1003,15 @@ def test_print_basic():\n     assert mpp.doprint(expr) == '<mrow><mi>basic</mi><mfenced><mn>1</mn><mn>2</mn></mfenced></mrow>'\n     assert mp.doprint(expr) == '<basic><cn>1</cn><cn>2</cn></basic>'\n \n+def test_print_indexed():\n+    from sympy import IndexedBase, Symbol\n+    A = IndexedBase('A')\n+    i, j = Symbol('i'), Symbol('j')\n+    expr = A[i, j]\n+    assert mp.doprint(expr) == '<apply><ci>A</ci><ci>i</ci><ci>j</ci></apply>'\n+    expr = IndexedBase('A')[1, 2]\n+    assert mp.doprint(expr) == '<apply><ci>A</ci><cn>1</cn><cn>2</cn></apply>'\n+\n \n def test_mat_delim_print():\n     expr = Matrix([[1, 2], [3, 4]])\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}

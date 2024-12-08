@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13710",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py\nindex dadd4acfa1..33236faade 100644\n--- a/django/contrib/admin/options.py\n+++ b/django/contrib/admin/options.py\n@@ -2040,7 +2040,13 @@ class InlineModelAdmin(BaseModelAdmin):\n         if self.verbose_name is None:\n             self.verbose_name = self.model._meta.verbose_name\n         if self.verbose_name_plural is None:\n-            self.verbose_name_plural = self.model._meta.verbose_name_plural\n+            # If verbose_name is explicitly set but verbose_name_plural isn't,\n+            # use verbose_name as the basis for verbose_name_plural\n+            if self.verbose_name is not None and self.verbose_name != self.model._meta.verbose_name:\n+                from django.utils.text import format_lazy\n+                self.verbose_name_plural = format_lazy('{}s', self.verbose_name)\n+            else:\n+                self.verbose_name_plural = self.model._meta.verbose_name_plural\n \n     @property\n     def media(self):\ndiff --git a/tests/admin_inlines/admin.py b/tests/admin_inlines/admin.py\nindex 9171c7102a..8c9e5046f2 100644\n--- a/tests/admin_inlines/admin.py\n+++ b/tests/admin_inlines/admin.py\n@@ -225,6 +225,8 @@ class SottoCapoInline(admin.TabularInline):\n class ProfileInline(admin.TabularInline):\n     model = Profile\n     extra = 1\n+    verbose_name = 'Custom profile'  # This will automatically set verbose_name_plural to 'Custom profiles'\n+\n \n \n # admin for #18433\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

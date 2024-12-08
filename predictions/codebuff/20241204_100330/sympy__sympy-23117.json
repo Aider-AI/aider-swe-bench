@@ -1,0 +1,9 @@
+{
+    "instance_id": "sympy__sympy-23117",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/sympy/tensor/array/ndim_array.py b/sympy/tensor/array/ndim_array.py\nindex 6490a655a4..c2401228c3 100644\n--- a/sympy/tensor/array/ndim_array.py\n+++ b/sympy/tensor/array/ndim_array.py\n@@ -194,8 +194,11 @@ def f(pointer):\n             if not isinstance(pointer, Iterable):\n                 return [pointer], ()\n \n+            if len(pointer) == 0:\n+                return [], (0,)\n+\n             result = []\n-            elems, shapes = zip(*[f(i) for i in pointer])\n+            elems, shapes = zip(*[f(i) for i in pointer]) if pointer else ([], ((0,),))\n             if len(set(shapes)) != 1:\n                 raise ValueError(\"could not determine shape unambiguously\")\n             for i in elems:\ndiff --git a/sympy/tensor/array/tests/test_ndim_array.py b/sympy/tensor/array/tests/test_ndim_array.py\nindex f0732fd7c7..261f70030b 100644\n--- a/sympy/tensor/array/tests/test_ndim_array.py\n+++ b/sympy/tensor/array/tests/test_ndim_array.py\n@@ -18,6 +18,13 @@\n ]\n \n \n+def test_empty_array():\n+    from sympy.tensor.array import Array\n+    a = Array([])\n+    assert a.shape == (0,)\n+    assert a.rank() == 1\n+    assert list(a) == []\n+\n def test_array_negative_indices():\n     for ArrayType in array_types:\n         test_array = ArrayType([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

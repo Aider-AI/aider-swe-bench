@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-14155",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/urls/resolvers.py b/django/urls/resolvers.py\nindex 9b00e24509..42d69effa9 100644\n--- a/django/urls/resolvers.py\n+++ b/django/urls/resolvers.py\n@@ -59,8 +59,18 @@ class ResolverMatch:\n         return (self.func, self.args, self.kwargs)[index]\n \n     def __repr__(self):\n+        func_repr = self._func_path\n+        if isinstance(self.func, functools.partial):\n+            # For partial functions, show the underlying function and bound arguments\n+            partial = self.func\n+            func_repr = '%s.%s' % (partial.func.__module__, partial.func.__qualname__)\n+            if partial.args:\n+                func_repr += ' args=%s' % (partial.args,)\n+            if partial.keywords:\n+                func_repr += ' keywords=%s' % (partial.keywords,)\n+\n         return \"ResolverMatch(func=%s, args=%s, kwargs=%s, url_name=%s, app_names=%s, namespaces=%s, route=%s)\" % (\n-            self._func_path, self.args, self.kwargs, self.url_name,\n+            func_repr, self.args, self.kwargs, self.url_name,\n             self.app_names, self.namespaces, self.route,\n         )\n \n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": true
+}

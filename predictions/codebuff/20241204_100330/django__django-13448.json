@@ -1,0 +1,9 @@
+{
+    "instance_id": "django__django-13448",
+    "model_name_or_path": "codebuff",
+    "model_patch": "diff --git a/django/db/backends/base/creation.py b/django/db/backends/base/creation.py\nindex 503f7f56fd..5e6f4f50f9 100644\n--- a/django/db/backends/base/creation.py\n+++ b/django/db/backends/base/creation.py\n@@ -97,6 +97,10 @@ class BaseDatabaseCreation:\n         Designed only for test runner usage; will not handle large\n         amounts of data.\n         \"\"\"\n+        # Skip serialization if migrations are disabled\n+        if not self.connection.settings_dict['TEST'].get('MIGRATE', True):\n+            return ''\n+            \n         # Iteratively return every object for all models to serialize.\n         def get_objects():\n             from django.db.migrations.loader import MigrationLoader\n",
+    "cost": 0,
+    "edit_outcome": true,
+    "lint_outcome": true,
+    "test_outcome": false
+}
