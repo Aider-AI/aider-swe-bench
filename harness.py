@@ -7,7 +7,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import lox
+import concurrent.futures
 from aider.coders import Coder
 from aider.io import InputOutput
 from aider.models import Model, register_litellm_models
@@ -414,32 +414,31 @@ def process_instances(
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    if threads > 1:
-        process_one_instance_lox = lox.process(threads)(process_one_instance)
-        process_one_instance_func = process_one_instance_lox.scatter
-        gather = process_one_instance_lox.gather
-    else:
-        process_one_instance_func = process_one_instance
+    process_one_instance_func = process_one_instance
 
-    for instance_id in remaining_instances:
-        if instance_id in done_instances:
-            print("skipping", instance_id)
-            continue
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        future_to_instance = {
+            executor.submit(
+                process_one_instance_func,
+                dataset[instance_id],
+                num_tries,
+                models,
+                temperature,
+                model_name_or_path,
+                out_dname,
+            ): instance_id
+            for instance_id in remaining_instances
+            if instance_id not in done_instances
+        }
 
-        process_one_instance_func(
-            dataset[instance_id],
-            num_tries,
-            models,
-            temperature,
-            model_name_or_path,
-            out_dname,
-        )
-
-        print("#" * 60)
-        # input()
-
-    if threads > 1:
-        gather()
+        for future in concurrent.futures.as_completed(future_to_instance):
+            instance_id = future_to_instance[future]
+            try:
+                future.result()
+            except Exception as exc:
+                print(f"{instance_id} generated an exception: {exc}")
+            else:
+                print(f"{instance_id} processed successfully")
 
 
 def main():
