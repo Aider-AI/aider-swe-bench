@@ -14,8 +14,7 @@ from aider.models import Model, register_litellm_models
 
 from dump import dump
 from tests import run_tests
-from utils import get_full_dataset  # noqa: F401
-from utils import get_lite_dataset  # noqa: F401
+from utils import get_full_dataset, get_lite_dataset  # noqa: F401
 from utils import get_devin_instance_ids, get_plausible, load_predictions, pick_winner
 
 REPOS_DNAME = Path("repos")
@@ -482,7 +481,7 @@ def main():
     if just_devin_570:
         # Filter it to the Devin 570
         devin_insts = get_devin_instance_ids()
-        dataset = dict((inst, entry) for inst, entry in dataset.items() if inst in devin_insts)
+        dataset = {inst: entry for inst, entry in dataset.items() if inst in devin_insts}
 
     #dataset = {"sympy__sympy-18532" : dataset["sympy__sympy-18532"]}
 

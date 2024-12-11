@@ -95,11 +95,18 @@ git clone https://github.com/paul-gauthier/aider-swe-bench
 cd aider-swe-bench
 git clone https://github.com/aorwall/SWE-bench-docker
 
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+
 # Install pip requirements
 pip install -r requirements.txt
 
 # You may want to install the latest main branch of aider
 python -m pip install --upgrade git+https://github.com/paul-gauthier/aider.git
+
+# Note: The SWE-Bench docker images are automatically pulled when needed.
+# The harness.py script interacts with these images to run the benchmarks.
 ```
 
 See the
