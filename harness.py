@@ -414,12 +414,7 @@ def process_instances(
     chat_history_dname = CHAT_LOGS_DNAME / models_slug
     chat_history_dname.mkdir(exist_ok=True)
 
-    if threads > 1:
-        process_one_instance_lox = lox.process(threads)(process_one_instance)
-        process_one_instance_func = process_one_instance_lox.scatter
-        gather = process_one_instance_lox.gather
-    else:
-        process_one_instance_func = process_one_instance
+    process_one_instance_func = process_one_instance
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         future_to_instance = {
