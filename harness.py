@@ -154,7 +154,6 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
     coder = Coder.create(
         main_model=model,
         io=io,
-        git_dname=git_dname,
         map_tokens=2048,  # Use 2k tokens for the repo map
         stream=False,
         auto_commits=False,  # Don't bother git committing changes
@@ -163,7 +162,6 @@ def get_coder(model, git_dname, chat_history_file, test_cmd, temperature, oracle
         test_cmd=test_cmd,
         # verbose=True,
         # edit_format="udiff",
-        max_chat_history_tokens=8*1024,
     )
     coder.temperature = temperature
 
