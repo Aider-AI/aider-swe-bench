@@ -177,6 +177,7 @@ def main():
     # Run with a set of prediction directories, in order of priority.
     # Plausible solution found in the earliest directory will be selected.
     dnames = sys.argv[1:]
+    base_path = dnames[0]
 
     # Make sure evals have been completed on all instances in all supplied
     # predictions dirs.
@@ -190,7 +191,8 @@ def main():
     # and copies over all markdown chat transcripts.
     model_name_or_path = "lite-multi"
 
-    preds_dir = Path("predictions") / model_name_or_path
+    preds_dir = Path(base_path) / model_name_or_path 
+    
     old(preds_dir)
     preds_dir.mkdir(exist_ok=True)
 
@@ -204,9 +206,11 @@ def main():
 
     dump(len(predictions))
 
-    predictions_jsonl, log_dir = combine_jsonl_logs(predictions, model_name_or_path)
+    print(base_path.split("/")[1:])
+    predictions_jsonl, log_dir = combine_jsonl_logs(predictions, '/'.join(base_path.split("/")[1:]))
+    print(predictions_jsonl, log_dir)
     report = get_report(LITE_DATASET_FNAME, log_dir, predictions_jsonl, model_name_or_path)
-    results_json = Path("predictions") / model_name_or_path / "results.json"
+    results_json = preds_dir / "results.json"
     results_json.write_text(json.dumps(report, indent=4))
 
     # Show the key stats on how many instances are resolved, etc

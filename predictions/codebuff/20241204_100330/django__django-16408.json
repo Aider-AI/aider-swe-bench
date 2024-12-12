@@ -5,5 +5,6 @@
     "cost": 0,
     "edit_outcome": true,
     "lint_outcome": true,
-    "test_outcome": true
+    "test_outcome": true,
+    "resolved": false
 }
