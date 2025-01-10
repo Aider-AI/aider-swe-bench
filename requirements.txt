@@ -1,4 +1,4 @@
 lox
-aider-chat
+aider-chat==0.40.6
 git+https://github.com/princeton-nlp/SWE-bench
 pre-commit
